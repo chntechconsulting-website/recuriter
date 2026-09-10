@@ -74,48 +74,88 @@ export const candidateService = {
       filtered = filtered.filter((c) => (c.location || '').toLowerCase().includes(params.location.toLowerCase()));
     }
 
-    // Qualification filter with smart degree aliases
+    // Qualification filter with comprehensive degree aliases
     if (params.qualification && params.qualification !== 'ALL') {
-      const qVal = params.qualification.trim().toLowerCase();
-      if (['b.e/b.tech', 'be', 'btech', 'engineering'].includes(qVal)) {
-        filtered = filtered.filter((c) => {
-          const q = (c.educational_qualification || '').toLowerCase();
-          return q.includes('b.e') || q.includes('b.tech') || q.includes('engineering') || q.includes('be') || q.includes('btech');
-        });
-      } else if (['arts & science', 'arts and science', 'arts'].includes(qVal)) {
-        filtered = filtered.filter((c) => {
-          const q = (c.educational_qualification || '').toLowerCase();
-          return q.includes('arts') || q.includes('b.sc') || q.includes('b.com') || q.includes('bba') || q.includes('bca') || q.includes('ba');
-        });
-      } else if (['diploma', 'polytechnic'].includes(qVal)) {
-        filtered = filtered.filter((c) => {
-          const q = (c.educational_qualification || '').toLowerCase();
-          return q.includes('diploma') || q.includes('polytechnic');
-        });
-      } else if (['iti'].includes(qVal)) {
-        filtered = filtered.filter((c) => {
-          const q = (c.educational_qualification || '').toLowerCase();
-          return q.includes('iti');
-        });
-      } else if (['post graduate', 'pg', 'master'].includes(qVal)) {
-        filtered = filtered.filter((c) => {
-          const q = (c.educational_qualification || '').toLowerCase();
-          return q.includes('m.e') || q.includes('m.tech') || q.includes('mba') || q.includes('mca') || q.includes('m.sc') || q.includes('m.com') || q.includes('ma');
-        });
-      } else {
-        filtered = filtered.filter((c) => (c.educational_qualification || '').toLowerCase().includes(qVal));
-      }
+      const f = params.qualification.trim().toLowerCase();
+      filtered = filtered.filter((cand) => {
+        const c = (cand.educational_qualification || '').toLowerCase().trim();
+        if (!c) return false;
+
+        // Engineering / Technology
+        if (f.includes('b.e') || f.includes('engineering') || f.includes('btech') || f.includes('b.tech')) {
+          return c.includes('b.e') || c.includes('b.tech') || c.includes('b. tech') || c.includes('engineering') || c.includes('btech') || c === 'be' || c.startsWith('be ');
+        }
+        // Polytechnic / Diploma
+        if (f.includes('diploma') || f.includes('polytechnic')) {
+          return c.includes('diploma') || c.includes('polytechnic');
+        }
+        // ITI
+        if (f.includes('iti')) {
+          return c.includes('iti');
+        }
+        // Science degrees (B.Sc, M.Sc)
+        if (f.includes('b.sc') || f.includes('m.sc') || f.includes('science')) {
+          return c.includes('b.sc') || c.includes('m.sc') || c.includes('b. sc') || c.includes('bsc') || c.includes('msc') || c.includes('science');
+        }
+        // Commerce degrees (B.Com, M.Com)
+        if (f.includes('b.com') || f.includes('m.com') || f.includes('commerce')) {
+          return c.includes('b.com') || c.includes('m.com') || c.includes('bcom') || c.includes('mcom') || c.includes('commerce');
+        }
+        // Management (BBA, MBA)
+        if (f.includes('bba') || f.includes('mba') || f.includes('management')) {
+          return c.includes('bba') || c.includes('mba') || c.includes('management');
+        }
+        // Computer Applications (BCA, MCA)
+        if (f.includes('bca') || f.includes('mca') || f.includes('computer')) {
+          return c.includes('bca') || c.includes('mca');
+        }
+        // Arts & Humanities (B.A, M.A)
+        if (f.includes('b.a') || f.includes('m.a') || f.includes('arts') || f.includes('humanities')) {
+          return c.includes('b.a') || c.includes('m.a') || c.includes('ba') || c.includes('arts') || c.includes('humanities');
+        }
+        // Higher Secondary / 12th
+        if (f.includes('12th') || f.includes('higher secondary') || f.includes('puc') || f.includes('hsc')) {
+          return c.includes('12th') || c.includes('hsc') || c.includes('puc') || c.includes('higher secondary');
+        }
+        // SSLC / 10th
+        if (f.includes('10th') || f.includes('sslc')) {
+          return c.includes('10th') || c.includes('sslc');
+        }
+        // Other degrees
+        if (f.includes('other')) {
+          return !c.includes('b.e') && !c.includes('b.tech') && !c.includes('diploma') && !c.includes('iti') && !c.includes('b.sc') && !c.includes('b.com') && !c.includes('bba') && !c.includes('mba') && !c.includes('bca') && !c.includes('mca') && !c.includes('b.a');
+        }
+
+        return c.includes(f);
+      });
     }
 
     // Experience type filter
     if (params.experience_type && params.experience_type !== 'ALL') {
       const expVal = params.experience_type.trim().toLowerCase();
-      filtered = filtered.filter((c) => (c.experience_type || '').toLowerCase().includes(expVal));
+      filtered = filtered.filter((c) => {
+        const val = (c.experience_type || '').toLowerCase();
+        if (expVal.includes('fresher')) return val.includes('fresher');
+        if (expVal.includes('experienced')) return val.includes('experienced');
+        return val.includes(expVal);
+      });
     }
 
     // Passout year filter
     if (params.passout_year && params.passout_year !== 'ALL') {
-      filtered = filtered.filter((c) => (c.year_of_passout || '').toString().includes(params.passout_year.toString()));
+      const yStr = params.passout_year.toString();
+      const matchYear = yStr.match(/\d{4}/);
+      if (yStr.toLowerCase().includes('before')) {
+        const year = matchYear ? parseInt(matchYear[0], 10) : 2020;
+        filtered = filtered.filter((c) => {
+          const y = parseInt(c.year_of_passout, 10);
+          return !isNaN(y) && y < year;
+        });
+      } else if (matchYear) {
+        filtered = filtered.filter((c) => (c.year_of_passout || '').toString().includes(matchYear[0]));
+      } else {
+        filtered = filtered.filter((c) => (c.year_of_passout || '').toString().includes(yStr));
+      }
     }
 
 
