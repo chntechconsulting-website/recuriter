@@ -42,9 +42,10 @@ export const Users = () => {
     setLoading(true);
     try {
       const data = await userService.getUsers();
-      setUsers(data);
+      setUsers(Array.isArray(data) ? data : (data?.items || []));
     } catch {
       error('Failed to load user accounts');
+      setUsers([]);
     } finally {
       setLoading(false);
     }
@@ -152,7 +153,7 @@ export const Users = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {users.map((u) => (
+                {(Array.isArray(users) ? users : []).map((u) => (
                   <tr key={u.id} className="hover:bg-slate-50">
                     <td className="p-4">
                       <div className="font-bold text-slate-900">{u.name}</div>
