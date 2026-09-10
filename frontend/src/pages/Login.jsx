@@ -5,8 +5,8 @@ import { useToast } from '../context/ToastContext';
 import { Briefcase, Lock, Mail, ArrowRight } from 'lucide-react';
 
 export const Login = () => {
-  const [username, setUsername] = useState('admin@jobfair.com');
-  const [password, setPassword] = useState('Admin@123Password');
+  const [username, setUsername] = useState(import.meta.env.VITE_DEFAULT_ADMIN_USERNAME || 'admin@jobfair.com');
+  const [password, setPassword] = useState(import.meta.env.VITE_DEFAULT_ADMIN_PASSWORD || 'Admin@123Password');
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 

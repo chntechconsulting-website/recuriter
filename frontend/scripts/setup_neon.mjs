@@ -2,7 +2,7 @@ import { neon } from '@neondatabase/serverless';
 import fs from 'fs';
 import path from 'path';
 
-const connectionString = "postgresql://neondb_owner:npg_4xTuzRpw9tmY@ep-lucky-feather-b3y9zm31-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
+const connectionString = process.env.VITE_DATABASE_URL || "postgresql://neondb_owner:npg_4xTuzRpw9tmY@ep-lucky-feather-b3y9zm31-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require";
 
 const sql = neon(connectionString);
 
