@@ -5,8 +5,8 @@ import { useToast } from '../context/ToastContext';
 import { Briefcase, Lock, Mail, ArrowRight } from 'lucide-react';
 
 export const Login = () => {
-  const [username, setUsername] = useState(import.meta.env.VITE_DEFAULT_ADMIN_USERNAME || 'admin@jobfair.com');
-  const [password, setPassword] = useState(import.meta.env.VITE_DEFAULT_ADMIN_PASSWORD || 'Admin@123Password');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -108,36 +108,6 @@ export const Login = () => {
               <ArrowRight className="w-4 h-4" />
             </button>
           </form>
-
-          <div className="mt-6 pt-6 border-t border-slate-800/80">
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 text-center">
-              Quick Demo Accounts
-            </p>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              <button
-                type="button"
-                onClick={() => {
-                  setUsername('admin@jobfair.com');
-                  setPassword('Admin@123Password');
-                }}
-                className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-left hover:border-blue-500 transition group"
-              >
-                <p className="font-bold text-white group-hover:text-blue-400">Admin</p>
-                <p className="text-[10px] text-slate-500 truncate">admin@jobfair.com</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setUsername('rahul.verma@jobfair.com');
-                  setPassword('Staff@123Password');
-                }}
-                className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-left hover:border-blue-500 transition group"
-              >
-                <p className="font-bold text-white group-hover:text-blue-400">Staff</p>
-                <p className="text-[10px] text-slate-500 truncate">rahul.verma@jobfair.com</p>
-              </button>
-            </div>
-          </div>
         </div>
       </div>
     </div>
