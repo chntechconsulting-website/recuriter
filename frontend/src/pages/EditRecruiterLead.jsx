@@ -12,7 +12,7 @@ export const EditRecruiterLead = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { success, error } = useToast();
-  const { isAdmin } = useAuth();
+  const { isAdmin, isPrivileged } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -125,9 +125,10 @@ export const EditRecruiterLead = () => {
           next_follow_up_date: leadData.next_follow_up_date || '',
           remarks: leadData.remarks || ''
         });
-      } catch {
-        error('Failed to load contact details');
-        navigate('/recruiters');
+      } catch (err) {
+        const detail = err?.response?.data?.detail || 'Failed to load contact details';
+        error(detail);
+        navigate('/recruiters', { replace: true });
       } finally {
         setLoading(false);
       }

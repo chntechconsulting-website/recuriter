@@ -63,9 +63,10 @@ export const RecruiterDetails = () => {
       setLead(leadData);
       setCommunications(commData);
       setStatusHistory(histData);
-    } catch {
-      error('Failed to load partner details');
-      navigate('/recruiters');
+    } catch (err) {
+      const detail = err?.response?.data?.detail || 'Failed to load partner details';
+      error(detail);
+      navigate('/recruiters', { replace: true });
     } finally {
       setLoading(false);
     }

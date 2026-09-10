@@ -1,8 +1,12 @@
 import { dbOps } from '../db/database';
 import { activityService } from './activityService';
+import { authService } from './authService';
 
 export const followUpService = {
   getFollowUps: async (params = {}) => {
+    const currentUser = authService.getSessionUser();
+    const isPrivileged = authService.isPrivilegedUser(currentUser);
+
     const [followUps, recruiters, users] = await Promise.all([
       dbOps.getAll('follow_ups'),
       dbOps.getAll('recruiters'),
@@ -17,7 +21,17 @@ export const followUpService = {
 
     const todayStr = new Date().toISOString().split('T')[0];
 
-    let enriched = followUps.map((f) => {
+    // Filter followups by assignment if non-privileged
+    let scopedFollowUps = followUps;
+    if (!isPrivileged && currentUser?.id) {
+      scopedFollowUps = followUps.filter((f) => {
+        const rec = recruiterMap[f.recruiter_id];
+        const assignedStaffId = f.assigned_to || rec?.assigned_to;
+        return Number(assignedStaffId) === Number(currentUser.id);
+      });
+    }
+
+    let enriched = scopedFollowUps.map((f) => {
       const rec = recruiterMap[f.recruiter_id] || {};
       return {
         ...f,

@@ -64,10 +64,14 @@ export const AuthProvider = ({ children }) => {
     };
   }, [token, logout]);
 
-  const isAdmin = user?.role === 'ADMIN';
+  const roleUpper = (user?.role || '').toUpperCase();
+  const isAdmin = roleUpper === 'ADMIN' || roleUpper === 'SUPER_ADMIN';
+  const isHR = roleUpper === 'HR';
+  const isPrivileged = isAdmin || isHR;
+  const isRecruiter = !isPrivileged && !!user;
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, isAdmin, isHR, isPrivileged, isRecruiter, userId: user?.id }}>
       {children}
     </AuthContext.Provider>
   );

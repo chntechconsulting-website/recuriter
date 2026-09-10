@@ -17,6 +17,17 @@ const TABLE_MAP = {
   settings: 'system_settings'
 };
 
+export function formatSqlValue(val, key = '') {
+  if (val === null || val === undefined) return 'NULL';
+  if (typeof val === 'number') return isNaN(val) ? 'NULL' : String(val);
+  if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
+  const str = String(val).trim();
+  if (str === '' && (key.endsWith('_id') || key.endsWith('_by') || key.endsWith('_to') || key === 'id' || key === 'candidates_required')) {
+    return 'NULL';
+  }
+  return `'${str.replace(/'/g, "''")}'`;
+}
+
 const DB_NAME = 'RecruiterCandidateDB_v5';
 const DB_VERSION = 1;
 
@@ -135,13 +146,7 @@ const getFromLocalCache = async (storeName) => {
   }
 };
 
-function formatSqlValue(val) {
-  if (val === null || val === undefined) return 'NULL';
-  if (typeof val === 'number') return isNaN(val) ? 'NULL' : String(val);
-  if (typeof val === 'boolean') return val ? 'TRUE' : 'FALSE';
-  const str = String(val).replace(/'/g, "''");
-  return `'${str}'`;
-}
+
 
 // Database Operations Layer (Direct Neon Singapore Cloud + In-Memory Caching + Fallback)
 export const dbOps = {
@@ -190,15 +195,30 @@ export const dbOps = {
   },
 
   getById: async (storeName, id) => {
+    const rawId = String(id || '').trim();
     const numId = Number(id);
+    const isNum = !isNaN(numId) && numId > 0 && String(numId) === rawId;
+
     if (memCache.has(storeName)) {
-      const item = memCache.get(storeName).find(i => Number(i.id) === numId);
+      const item = memCache.get(storeName).find(i => 
+        (isNum && Number(i.id) === numId) ||
+        (i.candidate_id && i.candidate_id.toLowerCase() === rawId.toLowerCase()) ||
+        (i.lead_id && i.lead_id.toLowerCase() === rawId.toLowerCase()) ||
+        (!isNum && String(i.id) === rawId)
+      );
       if (item) return item;
     }
 
     const table = TABLE_MAP[storeName] || storeName;
     try {
-      const rows = await sql.query(`SELECT * FROM ${table} WHERE id = ${numId} LIMIT 1`);
+      let queryStr;
+      if (isNum) {
+        queryStr = `SELECT * FROM ${table} WHERE id = ${numId} LIMIT 1`;
+      } else {
+        const idCol = table === 'candidates' ? 'candidate_id' : (table === 'recruiter_leads' ? 'lead_id' : 'id');
+        queryStr = `SELECT * FROM ${table} WHERE ${idCol} = '${rawId.replace(/'/g, "''")}' LIMIT 1`;
+      }
+      const rows = await sql.query(queryStr);
       if (rows && rows.length > 0) {
         return rows[0];
       }
@@ -207,7 +227,12 @@ export const dbOps = {
     }
 
     const all = await dbOps.getAll(storeName);
-    return all.find(i => Number(i.id) === numId) || null;
+    return all.find(i => 
+      (isNum && Number(i.id) === numId) ||
+      (i.candidate_id && i.candidate_id.toLowerCase() === rawId.toLowerCase()) ||
+      (i.lead_id && i.lead_id.toLowerCase() === rawId.toLowerCase()) ||
+      (!isNum && String(i.id) === rawId)
+    ) || null;
   },
 
   insert: async (storeName, item) => {
@@ -222,7 +247,7 @@ export const dbOps = {
     }
 
     const colNames = keys.join(', ');
-    const values = keys.map(k => formatSqlValue(cleanItem[k])).join(', ');
+    const values = keys.map(k => formatSqlValue(cleanItem[k], k)).join(', ');
 
     let inserted = null;
     try {
@@ -231,8 +256,8 @@ export const dbOps = {
       if (res && res[0]) {
         inserted = res[0];
       }
-    } catch {
-      // Fallback
+    } catch (err) {
+      console.error(`Neon DB insert error on ${table}:`, err);
     }
 
     if (!inserted) {
@@ -269,7 +294,7 @@ export const dbOps = {
       for (let i = 0; i < items.length; i += chunkSize) {
         const chunk = items.slice(i, i + chunkSize);
         const rowsStr = chunk.map(item => {
-          const vals = keys.map(k => formatSqlValue(item[k]));
+          const vals = keys.map(k => formatSqlValue(item[k], k));
           return `(${vals.join(', ')})`;
         }).join(',\n');
 
@@ -282,7 +307,8 @@ export const dbOps = {
 
       memCache.delete(storeName);
       return insertedAll.length > 0 ? insertedAll : items;
-    } catch {
+    } catch (err) {
+      console.error(`Neon DB bulkInsert error on ${table}:`, err);
       memCache.delete(storeName);
       return items;
     }
@@ -293,7 +319,7 @@ export const dbOps = {
     const numId = Number(id);
 
     const updateKeys = Object.keys(updates).filter(k => k !== 'id');
-    const setClause = updateKeys.map(k => `${k} = ${formatSqlValue(updates[k])}`).join(', ');
+    const setClause = updateKeys.map(k => `${k} = ${formatSqlValue(updates[k], k)}`).join(', ');
 
     let updated = null;
     try {
@@ -302,8 +328,8 @@ export const dbOps = {
       if (res && res[0]) {
         updated = res[0];
       }
-    } catch {
-      // Fallback
+    } catch (err) {
+      console.error(`Neon DB update error on ${table}:`, err);
     }
 
     if (!updated) {

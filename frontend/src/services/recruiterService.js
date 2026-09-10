@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { dbOps } from '../db/database';
 import { activityService } from './activityService';
+import { authService } from './authService';
 
 // In-memory import sessions cache
 const importSessions = new Map();
@@ -27,6 +28,9 @@ const RECRUITER_COLUMN_MAP = {
 
 export const recruiterService = {
   getRecruiters: async (params = {}) => {
+    const currentUser = authService.getSessionUser();
+    const isPrivileged = authService.isPrivilegedUser(currentUser);
+
     const [recruiters, users] = await Promise.all([
       dbOps.getAll('recruiters'),
       dbOps.getAll('users')
@@ -36,6 +40,14 @@ export const recruiterService = {
     users.forEach((u) => { userMap[u.id] = u.name; });
 
     let filtered = [...recruiters];
+
+    // Recruiter-Wise Access Control:
+    // Non-privileged users (RECRUITER / STAFF) see ONLY partners/leads assigned to them
+    if (!isPrivileged && currentUser?.id) {
+      filtered = filtered.filter((r) => Number(r.assigned_to) === Number(currentUser.id));
+    } else if (params.assigned_to) {
+      filtered = filtered.filter((r) => Number(r.assigned_to) === Number(params.assigned_to));
+    }
 
     // Multi-field search
     if (params.search && params.search.trim()) {
@@ -95,10 +107,6 @@ export const recruiterService = {
       }
     }
 
-    // Assigned to
-    if (params.assigned_to) {
-      filtered = filtered.filter((r) => Number(r.assigned_to) === Number(params.assigned_to));
-    }
 
     // Sorting
     const sortBy = params.sort_by || 'id';
@@ -142,6 +150,9 @@ export const recruiterService = {
   },
 
   getRecruiterById: async (id) => {
+    const currentUser = authService.getSessionUser();
+    const isPrivileged = authService.isPrivilegedUser(currentUser);
+
     const [recruiter, users, followUps, comms, statusHistory] = await Promise.all([
       dbOps.getById('recruiters', id),
       dbOps.getAll('users'),
@@ -151,7 +162,17 @@ export const recruiterService = {
     ]);
 
     if (!recruiter) {
-      throw { response: { data: { detail: 'Recruiter not found' } } };
+      throw { response: { data: { detail: 'Recruiter not found' }, status: 404 } };
+    }
+
+    // Direct URL Access Control
+    if (!isPrivileged && currentUser?.id && Number(recruiter.assigned_to) !== Number(currentUser.id)) {
+      throw {
+        response: {
+          status: 403,
+          data: { detail: 'Access Denied: You do not have permission to view or manage this partner.' }
+        }
+      };
     }
 
     const userMap = {};
@@ -175,19 +196,24 @@ export const recruiterService = {
   },
 
   createRecruiter: async (data) => {
+    const currentUser = authService.getSessionUser();
+    const isPrivileged = authService.isPrivilegedUser(currentUser);
+
     const all = await dbOps.getAll('recruiters');
     const nextNum = all.length + 1;
     const lead_id = `REC-${String(nextNum).padStart(6, '0')}`;
 
-    const savedUser = localStorage.getItem('user');
-    const user = savedUser ? JSON.parse(savedUser) : null;
+    const assignedTo = isPrivileged
+      ? (data.assigned_to ? Number(data.assigned_to) : currentUser?.id || null)
+      : (currentUser?.id || null);
 
     const newLead = await dbOps.insert('recruiters', {
       ...data,
       lead_id,
       status: data.status || 'YET_TO_CONNECT',
-      created_by: user?.id || null,
-      sourced_by: data.sourced_by || user?.id || null
+      assigned_to: assignedTo,
+      created_by: currentUser?.id || null,
+      sourced_by: data.sourced_by || currentUser?.id || null
     });
 
     await dbOps.insert('status_history', {
@@ -195,7 +221,7 @@ export const recruiterService = {
       old_status: null,
       new_status: newLead.status,
       remarks: 'Initial lead record created',
-      changed_by: user?.id || 1,
+      changed_by: currentUser?.id || 1,
       changed_at: new Date().toISOString()
     });
 
@@ -204,14 +230,48 @@ export const recruiterService = {
   },
 
   updateRecruiter: async (id, data) => {
-    const updated = await dbOps.update('recruiters', id, data);
+    const currentUser = authService.getSessionUser();
+    const isPrivileged = authService.isPrivilegedUser(currentUser);
+
+    const existing = await dbOps.getById('recruiters', id);
+    if (!existing) {
+      throw { response: { data: { detail: 'Recruiter not found' }, status: 404 } };
+    }
+
+    if (!isPrivileged && currentUser?.id && Number(existing.assigned_to) !== Number(currentUser.id)) {
+      throw {
+        response: {
+          status: 403,
+          data: { detail: 'Access Denied: You do not have permission to modify this partner.' }
+        }
+      };
+    }
+
+    const payload = { ...data };
+    if (!isPrivileged) {
+      delete payload.assigned_to;
+    }
+
+    const updated = await dbOps.update('recruiters', id, payload);
     await activityService.log('Lead Updated', 'Leads', updated.lead_id, `Updated details for ${updated.company_name}`);
     return updated;
   },
 
   updateStatus: async (id, status, remarks = '') => {
+    const currentUser = authService.getSessionUser();
+    const isPrivileged = authService.isPrivilegedUser(currentUser);
+
     const existing = await dbOps.getById('recruiters', id);
     if (!existing) throw new Error('Lead not found');
+
+    if (!isPrivileged && currentUser?.id && Number(existing.assigned_to) !== Number(currentUser.id)) {
+      throw {
+        response: {
+          status: 403,
+          data: { detail: 'Access Denied: You do not have permission to update this partner status.' }
+        }
+      };
+    }
 
     const oldStatus = existing.status;
     const updated = await dbOps.update('recruiters', id, {
@@ -220,15 +280,12 @@ export const recruiterService = {
       remarks: remarks || existing.remarks
     });
 
-    const savedUser = localStorage.getItem('user');
-    const user = savedUser ? JSON.parse(savedUser) : null;
-
     await dbOps.insert('status_history', {
       recruiter_id: Number(id),
       old_status: oldStatus,
       new_status: status,
       remarks: remarks || `Status changed from ${oldStatus} to ${status}`,
-      changed_by: user?.id || 1,
+      changed_by: currentUser?.id || 1,
       changed_at: new Date().toISOString()
     });
 
@@ -255,11 +312,25 @@ export const recruiterService = {
   },
 
   deleteRecruiter: async (id) => {
+    const currentUser = authService.getSessionUser();
+    const isPrivileged = authService.isPrivilegedUser(currentUser);
+
     const existing = await dbOps.getById('recruiters', id);
-    await dbOps.delete('recruiters', id);
-    if (existing) {
-      await activityService.log('Lead Deleted', 'Leads', existing.lead_id, `Deleted lead ${existing.company_name}`);
+    if (!existing) {
+      throw { response: { data: { detail: 'Recruiter not found' }, status: 404 } };
     }
+
+    if (!isPrivileged && currentUser?.id && Number(existing.assigned_to) !== Number(currentUser.id)) {
+      throw {
+        response: {
+          status: 403,
+          data: { detail: 'Access Denied: You do not have permission to delete this partner.' }
+        }
+      };
+    }
+
+    await dbOps.delete('recruiters', id);
+    await activityService.log('Lead Deleted', 'Leads', existing.lead_id, `Deleted lead ${existing.company_name}`);
     return { message: 'Lead deleted successfully' };
   },
 

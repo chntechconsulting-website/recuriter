@@ -62,5 +62,21 @@ export const authService = {
       await dbOps.update('users', user.id, { password_hash: new_password });
     }
     return { message: 'Password updated successfully' };
+  },
+
+  getSessionUser: () => {
+    try {
+      if (typeof window === 'undefined') return null;
+      const saved = localStorage.getItem('user');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  isPrivilegedUser: (user) => {
+    if (!user) return false;
+    const role = (user.role || '').toUpperCase();
+    return role === 'ADMIN' || role === 'HR' || role === 'SUPER_ADMIN';
   }
 };

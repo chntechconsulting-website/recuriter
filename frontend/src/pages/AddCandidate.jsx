@@ -5,10 +5,12 @@ import { userService } from '../services/userService';
 import { useToast } from '../context/ToastContext';
 import { DISTRICTS, DISTRICT_METADATA, QUALIFICATIONS, EXPERIENCE_TYPES, PASSOUT_YEARS, CANDIDATE_STATUSES } from '../utils/constants';
 import { User, GraduationCap, Briefcase, DollarSign, ArrowLeft, Save } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export const AddCandidate = () => {
   const navigate = useNavigate();
   const { success, error } = useToast();
+  const { user, isPrivileged } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -42,12 +44,16 @@ export const AddCandidate = () => {
     userService.getSimpleUsers().then((res) => {
       setUsers(res);
       if (res && res.length > 0) {
-        const meta = DISTRICT_METADATA.find(d => d.district.toLowerCase() === 'chennai');
-        const matched = meta ? res.find(u => u.name.toLowerCase().includes(meta.assignedTo.toLowerCase())) : null;
-        setFormData((prev) => ({ ...prev, assigned_to: matched ? matched.id : res[0].id }));
+        if (!isPrivileged && user?.id) {
+          setFormData((prev) => ({ ...prev, assigned_to: user.id }));
+        } else {
+          const meta = DISTRICT_METADATA.find(d => d.district.toLowerCase() === 'chennai');
+          const matched = meta ? res.find(u => u.name.toLowerCase().includes(meta.assignedTo.toLowerCase())) : null;
+          setFormData((prev) => ({ ...prev, assigned_to: matched ? matched.id : res[0].id }));
+        }
       }
     }).catch(() => {});
-  }, []);
+  }, [isPrivileged, user?.id]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -94,7 +100,7 @@ export const AddCandidate = () => {
       success(`Candidate registered! ID: ${res.candidate_id}`);
       navigate(`/candidates/${res.id}`);
     } catch (err) {
-      error(err.response?.data?.detail || 'Failed to register candidate');
+      error(err.response?.data?.detail || err.message || 'Failed to register candidate');
     } finally {
       setLoading(false);
     }

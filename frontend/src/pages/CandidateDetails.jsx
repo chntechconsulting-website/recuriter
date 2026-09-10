@@ -46,9 +46,10 @@ export const CandidateDetails = () => {
       const data = await candidateService.getCandidateById(id);
       setCandidate(data);
       setNewStatus(data.status);
-    } catch {
-      error('Failed to load candidate details');
-      navigate('/candidates');
+    } catch (err) {
+      const detail = err?.response?.data?.detail || 'Failed to load candidate details';
+      error(detail);
+      navigate('/candidates', { replace: true });
     } finally {
       setLoading(false);
     }

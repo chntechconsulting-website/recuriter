@@ -29,8 +29,10 @@ import { ConfirmDialog } from '../components/common/ConfirmDialog';
 import { Modal } from '../components/common/Modal';
 import { DISTRICTS, CANDIDATE_STATUSES, QUALIFICATIONS, EXPERIENCE_TYPES, PASSOUT_YEARS } from '../utils/constants';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 
 export const Candidates = () => {
+  const { user, isPrivileged } = useAuth();
   const [candidates, setCandidates] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -220,7 +222,7 @@ export const Candidates = () => {
             Candidate Sourcing Pool
           </h1>
           <p className="text-xs text-slate-500 font-medium mt-1">
-            Total {total} candidates registered across Tamil Nadu
+            Total {total} candidates
           </p>
         </div>
 

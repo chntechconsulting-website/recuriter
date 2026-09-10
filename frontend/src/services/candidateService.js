@@ -1,6 +1,7 @@
 import * as XLSX from 'xlsx';
 import { dbOps } from '../db/database';
 import { activityService } from './activityService';
+import { authService } from './authService';
 
 // Column alias mappings for Candidate Excel Import
 const CANDIDATE_COLUMN_MAP = {
@@ -27,6 +28,9 @@ const CANDIDATE_COLUMN_MAP = {
 
 export const candidateService = {
   getCandidates: async (params = {}) => {
+    const currentUser = authService.getSessionUser();
+    const isPrivileged = authService.isPrivilegedUser(currentUser);
+
     const [candidates, users] = await Promise.all([
       dbOps.getAll('candidates'),
       dbOps.getAll('users')
@@ -36,6 +40,13 @@ export const candidateService = {
     users.forEach((u) => { userMap[u.id] = u.name; });
 
     let filtered = [...candidates];
+
+    // Candidate data visibility:
+    // All candidates are visible to all recruiters.
+    // Optional filtering by assigned_to is supported for all users:
+    if (params.assigned_to) {
+      filtered = filtered.filter((c) => Number(c.assigned_to) === Number(params.assigned_to));
+    }
 
     // Multi-field search
     if (params.search && params.search.trim()) {
@@ -107,10 +118,6 @@ export const candidateService = {
       filtered = filtered.filter((c) => (c.year_of_passout || '').toString().includes(params.passout_year.toString()));
     }
 
-    // Assigned to filter
-    if (params.assigned_to) {
-      filtered = filtered.filter((c) => Number(c.assigned_to) === Number(params.assigned_to));
-    }
 
     // Sorting
     const sortBy = params.sort_by || 'id';
@@ -156,7 +163,7 @@ export const candidateService = {
     ]);
 
     if (!candidate) {
-      throw { response: { data: { detail: 'Candidate not found' } } };
+      throw { response: { data: { detail: 'Candidate not found' }, status: 404 } };
     }
 
     const userMap = {};
@@ -170,6 +177,8 @@ export const candidateService = {
   },
 
   createCandidate: async (data) => {
+    const currentUser = authService.getSessionUser();
+
     const all = await dbOps.getAll('candidates');
 
     // Duplicate check on Mobile and Email
@@ -179,31 +188,35 @@ export const candidateService = {
     const duplicate = all.find((c) => {
       const cMobile = (c.contact_number || '').replace(/\D/g, '');
       const cEmail = (c.email || '').trim().toLowerCase();
-      return (cleanMobile && cMobile === cleanMobile) || (cleanEmail && cEmail && cEmail === cleanEmail);
+      return (cleanMobile && cMobile && cMobile === cleanMobile) || (cleanEmail && cEmail && cEmail === cleanEmail);
     });
 
     if (duplicate) {
-      throw {
-        response: {
-          data: {
-            detail: `Candidate with mobile '${data.contact_number}' or email '${data.email}' already exists (${duplicate.candidate_id}: ${duplicate.name}).`
-          }
-        }
-      };
+      const msg = `Candidate with mobile '${data.contact_number}' or email '${data.email}' already exists (${duplicate.candidate_id}: ${duplicate.name}).`;
+      const err = new Error(msg);
+      err.response = { data: { detail: msg }, status: 400 };
+      throw err;
     }
 
-    const nextNum = all.length + 1;
-    const candidate_id = `CAND-${String(nextNum).padStart(6, '0')}`;
+    let maxNum = 0;
+    all.forEach(c => {
+      const match = (c.candidate_id || '').match(/\d+/);
+      if (match) {
+        const num = parseInt(match[0], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    });
+    const nextNum = Math.max(all.length + 1, maxNum + 1);
+    const candidate_id = `CAN-${String(nextNum).padStart(6, '0')}`;
 
-    const savedUser = localStorage.getItem('user');
-    const user = savedUser ? JSON.parse(savedUser) : null;
+    const assignedTo = data.assigned_to ? Number(data.assigned_to) : (currentUser?.id || null);
 
     const newCandidate = await dbOps.insert('candidates', {
       ...data,
       candidate_id,
       status: data.status || 'NEW',
-      created_by: user?.id || 1,
-      assigned_to: data.assigned_to || user?.id || null
+      created_by: currentUser?.id || 1,
+      assigned_to: assignedTo
     });
 
     await activityService.log('Candidate Registered', 'Candidates', newCandidate.candidate_id, `Registered candidate ${newCandidate.name}`);
@@ -211,6 +224,11 @@ export const candidateService = {
   },
 
   updateCandidate: async (id, data) => {
+    const existing = await dbOps.getById('candidates', id);
+    if (!existing) {
+      throw { response: { data: { detail: 'Candidate not found' }, status: 404 } };
+    }
+
     const all = await dbOps.getAll('candidates');
     const cleanMobile = (data.contact_number || '').replace(/\D/g, '');
 
@@ -221,12 +239,22 @@ export const candidateService = {
       }
     }
 
-    const updated = await dbOps.update('candidates', id, data);
+    const payload = { ...data };
+    if (payload.assigned_to !== undefined && payload.assigned_to !== '') {
+      payload.assigned_to = Number(payload.assigned_to);
+    }
+
+    const updated = await dbOps.update('candidates', id, payload);
     await activityService.log('Candidate Updated', 'Candidates', updated.candidate_id, `Updated candidate ${updated.name}`);
     return updated;
   },
 
   updateStatus: async (id, payload) => {
+    const existing = await dbOps.getById('candidates', id);
+    if (!existing) {
+      throw { response: { data: { detail: 'Candidate not found' }, status: 404 } };
+    }
+
     const updated = await dbOps.update('candidates', id, {
       status: payload.status,
       remarks: payload.remarks
@@ -237,10 +265,12 @@ export const candidateService = {
 
   deleteCandidate: async (id) => {
     const existing = await dbOps.getById('candidates', id);
-    await dbOps.delete('candidates', id);
-    if (existing) {
-      await activityService.log('Candidate Deleted', 'Candidates', existing.candidate_id, `Deleted candidate ${existing.name}`);
+    if (!existing) {
+      throw { response: { data: { detail: 'Candidate not found' }, status: 404 } };
     }
+
+    await dbOps.delete('candidates', id);
+    await activityService.log('Candidate Deleted', 'Candidates', existing.candidate_id, `Deleted candidate ${existing.name}`);
     return { message: 'Candidate deleted successfully' };
   },
 
@@ -324,6 +354,7 @@ export const candidateService = {
           expected_ctc: extracted.expected_ctc || '',
           status: 'NEW',
           remarks: extracted.remarks || '',
+          assigned_to: user?.id || null,
           created_by: user?.id || 1,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()

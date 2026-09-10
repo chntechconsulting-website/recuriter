@@ -1,4 +1,5 @@
 import { sql, dbOps } from '../db/database';
+import { authService } from './authService';
 
 const STATUS_COLORS = {
   YET_TO_CONNECT: '#3B82F6',
@@ -36,6 +37,21 @@ const DEFAULT_SOURCES = [
 export const dashboardService = {
   // Ultra-fast direct SQL aggregation from Neon DB with fallback
   getDashboardMetrics: async () => {
+    const currentUser = authService.getSessionUser();
+    const isPrivileged = authService.isPrivilegedUser(currentUser);
+    const userId = currentUser?.id ? Number(currentUser.id) : null;
+
+    // Build SQL condition clauses
+    const recWhere = (!isPrivileged && userId) ? `WHERE assigned_to = ${userId}` : '';
+    const recWhereAnd = (!isPrivileged && userId) ? `WHERE assigned_to = ${userId} AND` : 'WHERE';
+    const candWhere = '';
+    const fuWhere = (!isPrivileged && userId)
+      ? `WHERE recruiter_id IN (SELECT id FROM recruiter_leads WHERE assigned_to = ${userId})`
+      : '';
+    const fuWhereAnd = (!isPrivileged && userId)
+      ? `WHERE recruiter_id IN (SELECT id FROM recruiter_leads WHERE assigned_to = ${userId}) AND`
+      : 'WHERE';
+
     try {
       const [
         recCountRes,
@@ -48,15 +64,15 @@ export const dashboardService = {
         dateRes,
         followUpRes
       ] = await Promise.all([
-        sql.query('SELECT count(*) FROM recruiter_leads'),
-        sql.query('SELECT status, count(*) FROM recruiter_leads GROUP BY status'),
-        sql.query('SELECT count(*) FROM candidates'),
-        sql.query('SELECT COALESCE(SUM(candidates_required), 0) as total FROM recruiter_leads'),
-        sql.query("SELECT count(*) FROM recruiter_leads WHERE job_role IS NOT NULL AND job_role != ''"),
-        sql.query("SELECT district, count(*) FROM recruiter_leads WHERE district IS NOT NULL AND district != '' GROUP BY district ORDER BY count(*) DESC LIMIT 10"),
-        sql.query("SELECT lead_source, count(*) FROM recruiter_leads WHERE lead_source IS NOT NULL AND lead_source != '' GROUP BY lead_source ORDER BY count(*) DESC"),
-        sql.query("SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, count(*) FROM recruiter_leads WHERE created_at >= NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date ASC"),
-        sql.query("SELECT count(*) as total, COUNT(*) FILTER (WHERE follow_up_date = CURRENT_DATE AND status != 'Completed') as today_count, COUNT(*) FILTER (WHERE follow_up_date < CURRENT_DATE AND status != 'Completed') as overdue_count FROM follow_ups")
+        sql.query(`SELECT count(*) FROM recruiter_leads ${recWhere}`),
+        sql.query(`SELECT status, count(*) FROM recruiter_leads ${recWhere} GROUP BY status`),
+        sql.query(`SELECT count(*) FROM candidates ${candWhere}`),
+        sql.query(`SELECT COALESCE(SUM(candidates_required), 0) as total FROM recruiter_leads ${recWhere}`),
+        sql.query(`SELECT count(*) FROM recruiter_leads ${recWhereAnd} job_role IS NOT NULL AND job_role != ''`),
+        sql.query(`SELECT district, count(*) FROM recruiter_leads ${recWhereAnd} district IS NOT NULL AND district != '' GROUP BY district ORDER BY count(*) DESC LIMIT 10`),
+        sql.query(`SELECT lead_source, count(*) FROM recruiter_leads ${recWhereAnd} lead_source IS NOT NULL AND lead_source != '' GROUP BY lead_source ORDER BY count(*) DESC`),
+        sql.query(`SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, count(*) FROM recruiter_leads ${recWhereAnd} created_at >= NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date ASC`),
+        sql.query(`SELECT count(*) as total, COUNT(*) FILTER (${fuWhereAnd} follow_up_date = CURRENT_DATE AND status != 'Completed') as today_count, COUNT(*) FILTER (${fuWhereAnd} follow_up_date < CURRENT_DATE AND status != 'Completed') as overdue_count FROM follow_ups ${fuWhere}`)
       ]);
 
       const total_recruiters = Number(recCountRes?.[0]?.count) || 3656;

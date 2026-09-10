@@ -34,7 +34,7 @@ import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 
 export const RecruiterLeads = () => {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin, isPrivileged } = useAuth();
   const [leads, setLeads] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -153,8 +153,13 @@ export const RecruiterLeads = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
         <div>
           <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Colleges, Training Centers & Vendors</h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Total {total} institutions, colleges, and vendor contacts registered
+          <p className="text-xs text-slate-500 mt-0.5 flex items-center gap-2">
+            <span>Total {total} partner contacts</span>
+            {!isPrivileged && (
+              <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
+                Assigned to you ({user?.name})
+              </span>
+            )}
           </p>
         </div>
 

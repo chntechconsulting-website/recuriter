@@ -6,11 +6,13 @@ import { useToast } from '../context/ToastContext';
 import { DISTRICTS, QUALIFICATIONS, PASSOUT_YEARS, CANDIDATE_STATUSES } from '../utils/constants';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { User, GraduationCap, Briefcase, ArrowLeft, Save } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export const EditCandidate = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { success, error } = useToast();
+  const { isPrivileged } = useAuth();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -68,9 +70,10 @@ export const EditCandidate = () => {
           assigned_to: cand.assigned_to || '',
           remarks: cand.remarks || ''
         });
-      } catch {
-        error('Failed to load candidate details');
-        navigate('/candidates');
+      } catch (err) {
+        const detail = err?.response?.data?.detail || 'Failed to load candidate details';
+        error(detail);
+        navigate('/candidates', { replace: true });
       } finally {
         setLoading(false);
       }

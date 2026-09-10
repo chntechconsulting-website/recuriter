@@ -1,7 +1,11 @@
 import { dbOps } from '../db/database';
+import { authService } from './authService';
 
 export const reportService = {
   getAnalytics: async (startDate, endDate) => {
+    const currentUser = authService.getSessionUser();
+    const isPrivileged = authService.isPrivilegedUser(currentUser);
+
     const [recruiters, candidates, users, followUps] = await Promise.all([
       dbOps.getAll('recruiters'),
       dbOps.getAll('candidates'),
@@ -10,6 +14,12 @@ export const reportService = {
     ]);
 
     let filteredRecruiters = [...recruiters];
+    let filteredCandidates = [...candidates];
+
+    if (!isPrivileged && currentUser?.id) {
+      filteredRecruiters = filteredRecruiters.filter(r => Number(r.assigned_to) === Number(currentUser.id));
+    }
+
     if (startDate) {
       filteredRecruiters = filteredRecruiters.filter(r => r.created_at && r.created_at.split('T')[0] >= startDate);
     }
@@ -55,7 +65,7 @@ export const reportService = {
 
     return {
       total_recruiters,
-      total_candidates: candidates.length,
+      total_candidates: filteredCandidates.length,
       mou_signed,
       connected,
       interested,
