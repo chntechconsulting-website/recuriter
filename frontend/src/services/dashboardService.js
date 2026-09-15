@@ -44,7 +44,7 @@ export const dashboardService = {
     // Build SQL condition clauses
     const recWhere = (!isPrivileged && userId) ? `WHERE assigned_to = ${userId}` : '';
     const recWhereAnd = (!isPrivileged && userId) ? `WHERE assigned_to = ${userId} AND` : 'WHERE';
-    const candWhere = '';
+    const candWhere = (!isPrivileged && userId) ? `WHERE assigned_to = ${userId}` : '';
     const fuWhere = (!isPrivileged && userId)
       ? `WHERE recruiter_id IN (SELECT id FROM recruiter_leads WHERE assigned_to = ${userId})`
       : '';

@@ -221,8 +221,13 @@ export const Candidates = () => {
             <UserCheck className="w-6 h-6 text-blue-600" />
             Candidate Sourcing Pool
           </h1>
-          <p className="text-xs text-slate-500 font-medium mt-1">
-            Total {total} candidates
+          <p className="text-xs text-slate-500 font-medium mt-1 flex items-center gap-2">
+            <span>Total {total} candidates</span>
+            {!isPrivileged && (
+              <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold">
+                Assigned to you ({user?.name})
+              </span>
+            )}
           </p>
         </div>
 

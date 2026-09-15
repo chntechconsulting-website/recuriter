@@ -41,10 +41,11 @@ export const candidateService = {
 
     let filtered = [...candidates];
 
-    // Candidate data visibility:
-    // All candidates are visible to all recruiters.
-    // Optional filtering by assigned_to is supported for all users:
-    if (params.assigned_to) {
+    // Recruiter-Wise Access Control:
+    // Non-privileged users (RECRUITER / STAFF) see ONLY candidates assigned to them
+    if (!isPrivileged && currentUser?.id) {
+      filtered = filtered.filter((c) => Number(c.assigned_to) === Number(currentUser.id));
+    } else if (params.assigned_to) {
       filtered = filtered.filter((c) => Number(c.assigned_to) === Number(params.assigned_to));
     }
 
@@ -197,6 +198,9 @@ export const candidateService = {
   },
 
   getCandidateById: async (id) => {
+    const currentUser = authService.getSessionUser();
+    const isPrivileged = authService.isPrivilegedUser(currentUser);
+
     const [candidate, users] = await Promise.all([
       dbOps.getById('candidates', id),
       dbOps.getAll('users')
@@ -204,6 +208,17 @@ export const candidateService = {
 
     if (!candidate) {
       throw { response: { data: { detail: 'Candidate not found' }, status: 404 } };
+    }
+
+    // Direct URL Access Control:
+    // If not admin/HR and candidate is not assigned to this recruiter, DENY ACCESS
+    if (!isPrivileged && currentUser?.id && Number(candidate.assigned_to) !== Number(currentUser.id)) {
+      throw {
+        response: {
+          status: 403,
+          data: { detail: 'Access Denied: You do not have permission to view or manage this candidate.' }
+        }
+      };
     }
 
     const userMap = {};

@@ -16,13 +16,21 @@ export const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    const cleanUsername = (username || '').trim();
+    const cleanPassword = (password || '').trim();
+
+    if (!cleanUsername || !cleanPassword) {
+      error('Please enter both email and password.');
+      return;
+    }
+
     setLoading(true);
     try {
-      await login({ username, password, remember_me: rememberMe });
+      await login({ username: cleanUsername, password: cleanPassword, remember_me: rememberMe });
       success('Logged in successfully. Welcome back!');
       navigate('/dashboard');
     } catch (err) {
-      error(err.response?.data?.detail || 'Invalid email/username or password');
+      error(err.response?.data?.detail || err.message || 'Invalid email or password.');
     } finally {
       setLoading(false);
     }
