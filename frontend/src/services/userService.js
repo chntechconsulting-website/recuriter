@@ -39,20 +39,39 @@ export const userService = {
 
   createUser: async (data) => {
     const users = await dbOps.getAll('users');
-    const exists = users.find(u => u.email.toLowerCase() === data.email.toLowerCase());
+    const exists = users.find(u => (u.email || '').toLowerCase() === (data.email || '').toLowerCase().trim());
     if (exists) {
       throw { response: { data: { detail: 'User with this email already exists' } } };
     }
-    const newUser = await dbOps.insert('users', {
-      ...data,
+
+    const passwordVal = (data.password || data.password_hash || 'Chn@2021').trim();
+    const userPayload = {
+      name: (data.name || '').trim(),
+      email: (data.email || '').trim().toLowerCase(),
+      phone: data.phone ? String(data.phone).trim() : null,
+      role: data.role || 'STAFF',
       status: data.status || 'ACTIVE',
-      role: data.role || 'STAFF'
-    });
+      password_hash: passwordVal
+    };
+
+    const newUser = await dbOps.insert('users', userPayload);
     return newUser;
   },
 
   updateUser: async (id, data) => {
-    const updated = await dbOps.update('users', id, data);
+    const payload = {};
+    if (data.name !== undefined) payload.name = data.name.trim();
+    if (data.email !== undefined) payload.email = data.email.trim().toLowerCase();
+    if (data.phone !== undefined) payload.phone = data.phone ? String(data.phone).trim() : null;
+    if (data.role !== undefined) payload.role = data.role;
+    if (data.status !== undefined) payload.status = data.status;
+    if (data.password && data.password.trim()) {
+      payload.password_hash = data.password.trim();
+    } else if (data.password_hash && data.password_hash.trim()) {
+      payload.password_hash = data.password_hash.trim();
+    }
+
+    const updated = await dbOps.update('users', id, payload);
     return updated;
   },
 

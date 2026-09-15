@@ -240,6 +240,13 @@ export const dbOps = {
     const cleanItem = { ...item };
     delete cleanItem.id;
 
+    if (table === 'users') {
+      if (cleanItem.password !== undefined && !cleanItem.password_hash) {
+        cleanItem.password_hash = cleanItem.password;
+      }
+      delete cleanItem.password;
+    }
+
     const keys = Object.keys(cleanItem).filter(k => cleanItem[k] !== undefined);
     if (item.id) {
       keys.unshift('id');
@@ -318,8 +325,16 @@ export const dbOps = {
     const table = TABLE_MAP[storeName] || storeName;
     const numId = Number(id);
 
-    const updateKeys = Object.keys(updates).filter(k => k !== 'id');
-    const setClause = updateKeys.map(k => `${k} = ${formatSqlValue(updates[k], k)}`).join(', ');
+    const cleanUpdates = { ...updates };
+    if (table === 'users') {
+      if (cleanUpdates.password !== undefined && !cleanUpdates.password_hash) {
+        cleanUpdates.password_hash = cleanUpdates.password;
+      }
+      delete cleanUpdates.password;
+    }
+
+    const updateKeys = Object.keys(cleanUpdates).filter(k => k !== 'id');
+    const setClause = updateKeys.map(k => `${k} = ${formatSqlValue(cleanUpdates[k], k)}`).join(', ');
 
     let updated = null;
     try {
