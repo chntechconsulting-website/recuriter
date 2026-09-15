@@ -13,6 +13,7 @@ import {
   History,
   Settings,
   LogOut,
+  Activity
 } from 'lucide-react';
 
 export const Sidebar = ({ isOpen, onClose }) => {
@@ -21,6 +22,9 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   const navItems = [
     { to: '/dashboard', icon: LayoutGrid, label: 'Dashboard' },
+    ...(isAdmin ? [
+      { to: '/admin/recruiters-activity', icon: Activity, label: 'Recruiter Activity' }
+    ] : []),
     { to: '/recruiters', icon: GraduationCap, label: 'Colleges & Vendors' },
     { to: '/candidates', icon: UserCheck, label: 'Candidate Pool' },
     { to: '/follow-ups', icon: Calendar, label: 'Follow-ups' },

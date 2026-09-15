@@ -1,5 +1,6 @@
 import { dbOps } from '../db/database';
 import { activityService } from './activityService';
+import { recruiterActivityService } from './recruiterActivityService';
 import { authService } from './authService';
 
 export const followUpService = {
@@ -64,17 +65,36 @@ export const followUpService = {
       status: data.status || 'Pending'
     });
 
-    if (data.follow_up_date && data.recruiter_id) {
+    let lead = null;
+    if (data.recruiter_id) {
       try {
-        await dbOps.update('recruiters', data.recruiter_id, {
-          next_follow_up_date: data.follow_up_date
-        });
+        lead = await dbOps.getById('recruiters', data.recruiter_id);
+        if (data.follow_up_date) {
+          await dbOps.update('recruiters', data.recruiter_id, {
+            next_follow_up_date: data.follow_up_date
+          });
+        }
       } catch (e) {
         console.warn('Failed to update next_follow_up_date on recruiter', e);
       }
     }
 
+    const currentUser = authService.getSessionUser();
     await activityService.log('Follow-up Scheduled', 'FollowUps', newFollowUp.id, `Scheduled ${data.follow_up_type} for ${data.follow_up_date}`);
+
+    if (lead) {
+      await recruiterActivityService.logActivity({
+        recruiter_id: lead.assigned_to || currentUser?.id,
+        recruiter_name: currentUser?.name || 'Recruiter',
+        action_type: 'College follow-up scheduled',
+        job_id: lead.lead_id,
+        job_name: lead.company_name,
+        previous_status: lead.status,
+        new_status: lead.status,
+        description: `Scheduled ${data.follow_up_type} for ${data.follow_up_date}${data.follow_up_time ? ' at ' + data.follow_up_time : ''} with ${lead.company_name} (SPOC: ${lead.recruiter_name || 'N/A'}, Phone: ${lead.mobile || 'N/A'})${data.notes ? ' | Notes: ' + data.notes : ''}`
+      });
+    }
+
     return newFollowUp;
   },
 

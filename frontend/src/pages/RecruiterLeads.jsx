@@ -32,6 +32,7 @@ import { AddFollowUpModal } from '../components/recruiters/AddFollowUpModal';
 import { formatDate } from '../utils/formatters';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import { CATEGORY_SUBCATEGORIES } from '../utils/constants';
 
 export const RecruiterLeads = () => {
   const { user, isAdmin, isPrivileged } = useAuth();
@@ -41,12 +42,13 @@ export const RecruiterLeads = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('ALL'); // ALL, College, Training Center, Vendor
+  const [categoryFilter, setCategoryFilter] = useState('ALL'); // ALL, College, Training Center, NGO & Community, Vendors
   const [filters, setFilters] = useState({
     status: 'ALL',
     district: 'ALL',
     lead_source: 'ALL',
     industry: 'ALL',
+    subcategory: 'ALL',
     assigned_to: '',
     sort_by: 'id',
     sort_order: 'asc'
@@ -79,6 +81,7 @@ export const RecruiterLeads = () => {
         district: filters.district !== 'ALL' ? filters.district : undefined,
         lead_source: filters.lead_source !== 'ALL' ? filters.lead_source : undefined,
         industry: finalIndustry,
+        subcategory: filters.subcategory !== 'ALL' ? filters.subcategory : undefined,
         assigned_to: filters.assigned_to || undefined,
         sort_by: filters.sort_by,
         sort_order: filters.sort_order
@@ -113,7 +116,12 @@ export const RecruiterLeads = () => {
   };
 
   const handleFilterChange = (key, value) => {
-    setFilters((prev) => ({ ...prev, [key]: value }));
+    if (key === 'industry') {
+      setCategoryFilter(value);
+      setFilters((prev) => ({ ...prev, industry: value, subcategory: 'ALL' }));
+    } else {
+      setFilters((prev) => ({ ...prev, [key]: value }));
+    }
     setPage(1);
   };
 
@@ -123,6 +131,7 @@ export const RecruiterLeads = () => {
       district: 'ALL',
       lead_source: 'ALL',
       industry: 'ALL',
+      subcategory: 'ALL',
       assigned_to: '',
       sort_by: 'id',
       sort_order: 'asc'
@@ -203,9 +212,14 @@ export const RecruiterLeads = () => {
             key={cat.key}
             onClick={() => {
               setCategoryFilter(cat.key);
+              setFilters((prev) => ({
+                ...prev,
+                industry: cat.key,
+                subcategory: 'ALL'
+              }));
               setPage(1);
             }}
-            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap ${
+            className={`px-3.5 py-2 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
               categoryFilter === cat.key
                 ? 'bg-slate-900 text-white shadow-sm'
                 : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
@@ -215,6 +229,44 @@ export const RecruiterLeads = () => {
           </button>
         ))}
       </div>
+
+      {/* Subcategory Pills */}
+      {categoryFilter !== 'ALL' && CATEGORY_SUBCATEGORIES[categoryFilter] && (
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pl-0.5">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 shrink-0">
+            Subcategory:
+          </span>
+          <button
+            onClick={() => {
+              setFilters((prev) => ({ ...prev, subcategory: 'ALL' }));
+              setPage(1);
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+              (filters.subcategory || 'ALL') === 'ALL'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+            }`}
+          >
+            All Subcategories
+          </button>
+          {CATEGORY_SUBCATEGORIES[categoryFilter].map((sub) => (
+            <button
+              key={sub}
+              onClick={() => {
+                setFilters((prev) => ({ ...prev, subcategory: sub }));
+                setPage(1);
+              }}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer ${
+                filters.subcategory === sub
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              {sub}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Search & Filter Trigger */}
       <div className="flex flex-col sm:flex-row items-center gap-3">

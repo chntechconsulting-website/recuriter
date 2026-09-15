@@ -37,7 +37,11 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { dashboardService } from '../services/dashboardService';
 import { followUpService } from '../services/followUpService';
 import { activityService } from '../services/activityService';
-import { formatDate } from '../utils/formatters';
+import { recruiterActivityService } from '../services/recruiterActivityService';
+import { candidateService } from '../services/candidateService';
+import { recruiterService } from '../services/recruiterService';
+import { useAuth } from '../context/AuthContext';
+import { formatDate, formatDateTime } from '../utils/formatters';
 import { LEAD_STATUSES } from '../utils/constants';
 import {
   Chart as ChartJS,
@@ -77,17 +81,28 @@ export const Dashboard = () => {
   const [overdueFollowups, setOverdueFollowups] = useState([]);
   const [recentActivities, setRecentActivities] = useState([]);
   const [activeFollowupTab, setActiveFollowupTab] = useState('today');
+  const [recruiterKpis, setRecruiterKpis] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { user, isAdmin, isPrivileged } = useAuth();
+
+  // Recruiter Assigned Portfolio Tabs: 'candidates' | 'colleges' | 'vendors'
+  const [recruiterTab, setRecruiterTab] = useState('candidates');
+  const [myCandidates, setMyCandidates] = useState([]);
+  const [myColleges, setMyColleges] = useState([]);
+  const [myVendors, setMyVendors] = useState([]);
+  const [portfolioLoading, setPortfolioLoading] = useState(false);
+  const [portfolioSearch, setPortfolioSearch] = useState('');
 
   const fetchDashboardData = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
-      const [metrics, todays, overdues, activities] = await Promise.all([
+      const [metrics, todays, overdues, activities, recruiters] = await Promise.all([
         dashboardService.getDashboardMetrics(),
         followUpService.getFollowUps({ category: 'today' }).catch(() => []),
         followUpService.getFollowUps({ category: 'overdue' }).catch(() => []),
-        activityService.getLogs({ page: 1, page_size: 6 }).catch(() => ({ items: [] }))
+        activityService.getLogs({ page: 1, page_size: 6 }).catch(() => ({ items: [] })),
+        recruiterActivityService.getAllRecruitersWithKpis({ includeAdmins: false }).catch(() => [])
       ]);
 
       if (metrics) {
@@ -100,6 +115,23 @@ export const Dashboard = () => {
       setTodayFollowups(todays || []);
       setOverdueFollowups(overdues || []);
       setRecentActivities(activities?.items || []);
+      setRecruiterKpis(recruiters || []);
+
+      // If non-admin recruiter or viewing personal portfolio, fetch assigned portfolio
+      if (user?.id) {
+        setPortfolioLoading(true);
+        try {
+          const recDetails = await recruiterActivityService.getRecruiterDetails(user.id);
+          const allCandidates = await candidateService.getCandidates({ page: 1, page_size: 100, assigned_to: user.id });
+          setMyCandidates(allCandidates.items || []);
+          setMyColleges(recDetails.assigned_colleges || []);
+          setMyVendors(recDetails.assigned_vendors || []);
+        } catch {
+          // Non-fatal
+        } finally {
+          setPortfolioLoading(false);
+        }
+      }
     } catch {
       // Gracefully catch any network or parse issue
     } finally {
@@ -557,6 +589,366 @@ export const Dashboard = () => {
             <Bar data={sourceChartData} options={sourceChartOptions} />
           </div>
         </div>
+      </div>
+
+      {/* Individual Recruiter Activity Dashboard Section (Admin View) */}
+      {isAdmin && (
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg border border-blue-100">
+                  <Activity className="w-4 h-4" />
+                </span>
+                <h3 className="text-base font-black text-slate-900 tracking-tight">
+                  Individual Recruiter Performance & Live Activity
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Monitor what each individual recruiter is doing across candidate pipelines and job openings.
+              </p>
+            </div>
+
+            <Link
+              to="/admin/recruiters-activity"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md hover:shadow-blue-500/20 transition self-start sm:self-auto"
+            >
+              <span>View Full Recruiter Activity Dashboard</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          {/* Quick Recruiter Leaderboard Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 font-bold text-slate-500 border-b border-slate-100 text-[10px] uppercase tracking-wider">
+                <tr>
+                  <th className="py-3 px-3">Recruiter</th>
+                  <th className="py-3 px-2">Emp ID</th>
+                  <th className="py-3 px-2 text-center">Assigned</th>
+                  <th className="py-3 px-2 text-center text-purple-600">Contacted</th>
+                  <th className="py-3 px-2 text-center text-amber-600">Shortlisted</th>
+                  <th className="py-3 px-2 text-center text-indigo-600">Interview</th>
+                  <th className="py-3 px-2 text-center text-emerald-600">Selected</th>
+                  <th className="py-3 px-2 text-center text-teal-600">Joined</th>
+                  <th className="py-3 px-3">Last Activity</th>
+                  <th className="py-3 px-3 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {recruiterKpis.slice(0, 5).map((r) => (
+                  <tr key={r.id} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-3">
+                      <div className="font-extrabold text-slate-900">{r.name}</div>
+                      <div className="text-[11px] text-slate-400">{r.email}</div>
+                    </td>
+                    <td className="py-3 px-2 font-mono font-bold text-slate-700">
+                      <span className="px-1.5 py-0.5 bg-slate-100 rounded text-[10px] border border-slate-200">
+                        {r.employee_id}
+                      </span>
+                    </td>
+                    <td className="py-3 px-2 text-center font-bold text-slate-800">{r.assigned_candidates_count}</td>
+                    <td className="py-3 px-2 text-center font-bold text-purple-700">{r.contacted_count}</td>
+                    <td className="py-3 px-2 text-center font-bold text-amber-700">{r.shortlisted_count}</td>
+                    <td className="py-3 px-2 text-center font-bold text-indigo-700">{r.interview_scheduled_count}</td>
+                    <td className="py-3 px-2 text-center font-bold text-emerald-700">{r.selected_count}</td>
+                    <td className="py-3 px-2 text-center font-bold text-teal-700">
+                      <span className="px-1.5 py-0.5 bg-teal-50 text-teal-700 rounded font-black border border-teal-100">
+                        {r.joined_count}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 text-slate-500 min-w-[150px]">
+                      {r.last_activity ? (
+                        <div>
+                          <div className="font-bold text-slate-800 text-[11px] truncate max-w-[150px]">
+                            {r.last_activity.action_type}
+                          </div>
+                          <div className="text-[10px] text-slate-400">{formatDate(r.last_activity.created_at)}</div>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 italic text-[11px]">No activity</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      <Link
+                        to={`/admin/recruiters-activity/${r.id}`}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 rounded-lg text-xs font-bold transition shadow-2xs"
+                      >
+                        <span>Full Activity</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Recruiter Assigned Portfolio (3 Tabs: Candidates, Colleges, Vendors) */}
+      <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg border border-blue-100">
+                <Briefcase className="w-4 h-4" />
+              </span>
+              <h3 className="text-base font-black text-slate-900 tracking-tight">
+                My Assigned Recruitment Portfolio
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Personalized allocation workspace for {user?.name || 'Recruiter'}: only candidates, institutions, and vendors assigned to you.
+            </p>
+          </div>
+
+          {/* 3 Tabs: Candidates, Colleges, Vendors */}
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl self-start sm:self-auto">
+            <button
+              onClick={() => setRecruiterTab('candidates')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                recruiterTab === 'candidates'
+                  ? 'bg-white text-blue-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <UserCheck className="w-3.5 h-3.5 text-blue-600" />
+              <span>Candidates ({myCandidates.length})</span>
+            </button>
+
+            <button
+              onClick={() => setRecruiterTab('colleges_vendors')}
+              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
+                recruiterTab === 'colleges_vendors' || recruiterTab === 'colleges' || recruiterTab === 'vendors'
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+              <span>Colleges & Vendors ({myColleges.length + myVendors.length})</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Search Bar */}
+        <div className="relative max-w-sm">
+          <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
+          <input
+            type="text"
+            placeholder={
+              recruiterTab === 'candidates'
+                ? 'Filter assigned candidates...'
+                : 'Filter assigned colleges & vendors...'
+            }
+            value={portfolioSearch}
+            onChange={(e) => setPortfolioSearch(e.target.value)}
+            className="w-full pl-8.5 pr-3 py-1.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-medium"
+          />
+        </div>
+
+        {/* TAB 1: CANDIDATES */}
+        {recruiterTab === 'candidates' && (
+          <div className="overflow-x-auto">
+            {myCandidates.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-xs font-medium">
+                No candidates assigned to your pipeline yet.
+              </div>
+            ) : (
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 font-bold text-slate-500 border-b border-slate-100 text-[10px] uppercase tracking-wider">
+                  <tr>
+                    <th className="py-3 px-3">Candidate</th>
+                    <th className="py-3 px-2">ID</th>
+                    <th className="py-3 px-2">Role / Domain</th>
+                    <th className="py-3 px-2">Qualification & College</th>
+                    <th className="py-3 px-2">Contact</th>
+                    <th className="py-3 px-2">Pipeline Status</th>
+                    <th className="py-3 px-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                  {myCandidates
+                    .filter((c) => {
+                      if (!portfolioSearch.trim()) return true;
+                      const q = portfolioSearch.toLowerCase();
+                      return (
+                        (c.name && c.name.toLowerCase().includes(q)) ||
+                        (c.candidate_id && c.candidate_id.toLowerCase().includes(q)) ||
+                        (c.position_interested_in && c.position_interested_in.toLowerCase().includes(q)) ||
+                        (c.college_name && c.college_name.toLowerCase().includes(q))
+                      );
+                    })
+                    .slice(0, 8)
+                    .map((cand) => (
+                      <tr key={cand.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-3">
+                          <Link to={`/candidates/${cand.id}`} className="font-extrabold text-slate-900 hover:text-blue-600 block">
+                            {cand.name}
+                          </Link>
+                          <span className="text-[10px] text-slate-400">{cand.location}</span>
+                        </td>
+                        <td className="py-3 px-2 font-mono font-bold text-blue-700 text-[11px]">
+                          {cand.candidate_id}
+                        </td>
+                        <td className="py-3 px-2 font-semibold text-slate-800">
+                          {cand.position_interested_in || 'General Candidate'}
+                        </td>
+                        <td className="py-3 px-2">
+                          <div className="font-bold text-slate-800">{cand.educational_qualification || '-'}</div>
+                          <div className="text-[10px] text-slate-400 truncate max-w-[140px]">{cand.college_name || '-'}</div>
+                        </td>
+                        <td className="py-3 px-2">
+                          <div className="font-mono text-[11px] text-slate-700">{cand.contact_number}</div>
+                          <div className="text-[10px] text-slate-400 truncate max-w-[140px]">{cand.email}</div>
+                        </td>
+                        <td className="py-3 px-2">
+                          <span className="px-2 py-0.5 rounded-full font-bold text-[10px] bg-blue-50 text-blue-700 border border-blue-200">
+                            {cand.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <Link
+                            to={`/candidates/${cand.id}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 rounded-lg text-xs font-bold transition shadow-2xs"
+                          >
+                            <span>Manage</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: MERGED COLLEGES & VENDORS */}
+        {recruiterTab !== 'candidates' && (
+          <div className="overflow-x-auto">
+            {myColleges.length === 0 && myVendors.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-xs font-medium">
+                No colleges or vendors assigned to your portfolio yet.
+              </div>
+            ) : (
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 font-bold text-slate-500 border-b border-slate-100 text-[10px] uppercase tracking-wider">
+                  <tr>
+                    <th className="py-3 px-3">Institution / Partner</th>
+                    <th className="py-3 px-2">Type</th>
+                    <th className="py-3 px-2">Code / ID</th>
+                    <th className="py-3 px-2">District / Location</th>
+                    <th className="py-3 px-2">Contact SPOC</th>
+                    <th className="py-3 px-2">Phone & Email</th>
+                    <th className="py-3 px-2">Status</th>
+                    <th className="py-3 px-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
+                  {[
+                    ...myColleges.map((c) => {
+                      const type = c.college_type || 'College';
+                      const isNgo = type.toLowerCase().includes('ngo');
+                      const isTraining = type.toLowerCase().includes('training');
+                      return {
+                        id: c.id,
+                        name: c.college_name,
+                        category: isNgo ? 'NGO' : isTraining ? 'Training Center' : 'College',
+                        sub_type: c.college_type,
+                        code: c.college_code,
+                        district: c.district,
+                        location: c.location,
+                        contact_person: c.contact_person,
+                        mobile: c.mobile,
+                        email: c.email,
+                        status: c.status
+                      };
+                    }),
+                    ...myVendors.map((v) => ({
+                      id: v.id,
+                      name: v.vendor_name,
+                      category: 'Vendor',
+                      sub_type: v.vendor_type,
+                      code: v.vendor_code,
+                      district: v.district,
+                      location: v.location,
+                      contact_person: v.contact_person,
+                      mobile: v.mobile,
+                      email: v.email,
+                      status: v.status
+                    }))
+                  ]
+                    .filter((item) => {
+                      if (!portfolioSearch.trim()) return true;
+                      const q = portfolioSearch.toLowerCase();
+                      return (
+                        (item.name && item.name.toLowerCase().includes(q)) ||
+                        (item.code && item.code.toLowerCase().includes(q)) ||
+                        (item.district && item.district.toLowerCase().includes(q)) ||
+                        (item.category && item.category.toLowerCase().includes(q)) ||
+                        (item.contact_person && item.contact_person.toLowerCase().includes(q))
+                      );
+                    })
+                    .slice(0, 10)
+                    .map((item) => (
+                      <tr key={`${item.category}-${item.id}`} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3 px-3">
+                          <Link to={`/recruiters/${item.id}`} className="font-extrabold text-slate-900 hover:text-indigo-600 block">
+                            {item.name}
+                          </Link>
+                          <span className="text-[10px] text-slate-400">{item.sub_type}</span>
+                        </td>
+                        <td className="py-3 px-2">
+                          <span
+                            className={`px-2 py-0.5 rounded-full font-bold text-[10px] border ${
+                              item.category === 'College'
+                                ? 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                                : item.category === 'NGO'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : item.category === 'Training Center'
+                                ? 'bg-teal-50 text-teal-700 border-teal-200'
+                                : 'bg-purple-50 text-purple-700 border-purple-200'
+                            }`}
+                          >
+                            {item.category}
+                          </span>
+                        </td>
+                        <td className="py-3 px-2 font-mono font-bold text-slate-700 text-[11px]">
+                          {item.code}
+                        </td>
+                        <td className="py-3 px-2">
+                          <div className="font-bold text-slate-800">{item.district}</div>
+                          <div className="text-[10px] text-slate-400">{item.location}</div>
+                        </td>
+                        <td className="py-3 px-2 font-bold text-slate-800">
+                          {item.contact_person}
+                        </td>
+                        <td className="py-3 px-2">
+                          <div className="font-mono text-[11px] text-slate-700">{item.mobile}</div>
+                          <div className="text-[10px] text-slate-400 truncate max-w-[140px]">{item.email}</div>
+                        </td>
+                        <td className="py-3 px-2">
+                          <span className="px-2 py-0.5 rounded-full font-bold text-[10px] bg-slate-100 text-slate-700 border border-slate-200">
+                            {item.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 text-right">
+                          <Link
+                            to={`/recruiters/${item.id}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-900 hover:text-white text-slate-700 rounded-lg text-xs font-bold transition shadow-2xs"
+                          >
+                            <span>Open</span>
+                            <ArrowRight className="w-3 h-3" />
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Operational Section: Follow-ups Queue + Live Activity Stream */}

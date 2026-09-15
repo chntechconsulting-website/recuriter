@@ -1,5 +1,5 @@
 import React from 'react';
-import { INSTITUTION_TYPES, LEAD_STATUSES, DISTRICTS, SOURCING_CHANNELS } from '../../utils/constants';
+import { INSTITUTION_TYPES, LEAD_STATUSES, DISTRICTS, SOURCING_CHANNELS, CATEGORY_SUBCATEGORIES } from '../../utils/constants';
 import { RotateCcw } from 'lucide-react';
 
 export const FilterPanel = ({ filters, onChange, onReset, users = [], isAdmin = true }) => {
@@ -11,14 +11,14 @@ export const FilterPanel = ({ filters, onChange, onReset, users = [], isAdmin = 
         </h4>
         <button
           onClick={onReset}
-          className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-bold"
+          className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-700 font-bold cursor-pointer"
         >
           <RotateCcw className="w-3.5 h-3.5" />
           Reset Filters
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <div>
           <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
             Status
@@ -41,13 +41,42 @@ export const FilterPanel = ({ filters, onChange, onReset, users = [], isAdmin = 
           </label>
           <select
             value={filters.industry}
-            onChange={(e) => onChange('industry', e.target.value)}
+            onChange={(e) => {
+              onChange('industry', e.target.value);
+              onChange('subcategory', 'ALL');
+            }}
             className="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
           >
             <option value="ALL">All Categories</option>
             {INSTITUTION_TYPES.map((ind) => (
               <option key={ind} value={ind}>{ind}</option>
             ))}
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+            Subcategory
+          </label>
+          <select
+            value={filters.subcategory || 'ALL'}
+            onChange={(e) => onChange('subcategory', e.target.value)}
+            className="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+          >
+            <option value="ALL">All Subcategories</option>
+            {filters.industry && filters.industry !== 'ALL' && CATEGORY_SUBCATEGORIES[filters.industry] ? (
+              CATEGORY_SUBCATEGORIES[filters.industry].map((sub) => (
+                <option key={sub} value={sub}>{sub}</option>
+              ))
+            ) : (
+              Object.entries(CATEGORY_SUBCATEGORIES).map(([cat, subs]) => (
+                <optgroup key={cat} label={cat}>
+                  {subs.map((sub) => (
+                    <option key={sub} value={sub}>{sub}</option>
+                  ))}
+                </optgroup>
+              ))
+            )}
           </select>
         </div>
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { userService } from '../services/userService';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -17,7 +18,8 @@ import {
   Phone,
   Shield,
   Eye,
-  EyeOff
+  EyeOff,
+  Activity
 } from 'lucide-react';
 
 export const Users = () => {
@@ -186,6 +188,13 @@ export const Users = () => {
                     <td className="p-4 text-slate-500">{formatDateTime(u.created_at)}</td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <Link
+                          to={`/admin/recruiters-activity/${u.id}`}
+                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition"
+                          title="View Recruiter Activity Timeline"
+                        >
+                          <Activity className="w-4 h-4" />
+                        </Link>
                         <button
                           onClick={() => openEditModal(u)}
                           className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"

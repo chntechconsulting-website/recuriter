@@ -190,12 +190,44 @@ export const COMMUNICATION_TYPES = [
 export const CANDIDATE_STATUSES = [
   { value: 'NEW', label: 'New Candidate', color: 'blue', bg: 'bg-blue-100 text-blue-800 border-blue-200' },
   { value: 'CONTACTED', label: 'Contacted', color: 'purple', bg: 'bg-purple-100 text-purple-800 border-purple-200' },
+  { value: 'SHORTLISTED', label: 'Shortlisted', color: 'amber', bg: 'bg-amber-100 text-amber-800 border-amber-200' },
   { value: 'SCREENED', label: 'Profile Screened', color: 'amber', bg: 'bg-amber-100 text-amber-800 border-amber-200' },
   { value: 'INTERVIEW_SCHEDULED', label: 'Interview Scheduled', color: 'indigo', bg: 'bg-indigo-100 text-indigo-800 border-indigo-200' },
-  { value: 'SELECTED', label: 'Selected / Shortlisted', color: 'emerald', bg: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+  { value: 'SELECTED', label: 'Selected', color: 'emerald', bg: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+  { value: 'JOINED', label: 'Joined', color: 'teal', bg: 'bg-teal-100 text-teal-800 border-teal-200' },
   { value: 'PLACED', label: 'Placed / Hired', color: 'green', bg: 'bg-green-100 text-green-800 border-green-200' },
   { value: 'NOT_INTERESTED', label: 'Not Interested', color: 'rose', bg: 'bg-rose-100 text-rose-800 border-rose-200' },
   { value: 'REJECTED', label: 'Rejected', color: 'slate', bg: 'bg-slate-100 text-slate-800 border-slate-200' }
+];
+
+export const RECRUITER_ACTION_TYPES = [
+  'College assigned',
+  'College updated',
+  'College contacted',
+  'College visit completed',
+  'College contact details updated',
+  'College status changed',
+  'College follow-up scheduled',
+  'MOU signed',
+  'Vendor assigned',
+  'Vendor updated',
+  'Vendor contacted',
+  'Vendor meeting completed',
+  'Vendor status changed',
+  'Candidate assigned',
+  'Candidate status changed',
+  'Candidate added',
+  'Candidate updated',
+  'Candidate contacted',
+  'Candidate shortlisted',
+  'Interview scheduled',
+  'Interview status updated',
+  'Candidate rejected',
+  'Candidate selected',
+  'Candidate joined',
+  'Resume uploaded',
+  'Job assigned',
+  'Notes added'
 ];
 
 export const QUALIFICATIONS = [

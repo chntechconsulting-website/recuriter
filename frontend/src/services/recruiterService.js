@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import { dbOps } from '../db/database';
 import { activityService } from './activityService';
 import { authService } from './authService';
+import { recruiterActivityService } from './recruiterActivityService';
 
 // In-memory import sessions cache
 const importSessions = new Map();
@@ -25,6 +26,81 @@ const RECRUITER_COLUMN_MAP = {
   lead_source: ['lead_source', 'source', 'channel', 'sourcing_channel'],
   status: ['status', 'lead_status', 'stage']
 };
+
+export function matchSubcategory(lead, subcat) {
+  if (!subcat || subcat === 'ALL') return true;
+
+  const ind = (lead.industry || '').trim().toLowerCase();
+  const subLower = subcat.trim().toLowerCase();
+  if (ind === subLower) {
+    return true;
+  }
+
+  const text = `${lead.company_name || ''} ${lead.job_role || ''} ${lead.industry || ''} ${lead.remarks || ''} ${lead.job_description || ''}`.toLowerCase();
+
+  switch (subcat) {
+    // Colleges
+    case 'Engineering College':
+      return text.includes('engineering') || text.includes('technology') || text.includes(' engg ') || text.includes('tech ') || text.includes('engg.');
+    case 'Arts and Science College':
+      return text.includes('arts') || text.includes('science') || text.includes('liberal arts');
+    case 'Pharmacy / Medical / Paramedical College':
+      return text.includes('pharm') || text.includes('medic') || text.includes('nurs') || text.includes('paramed') || text.includes('dental') || text.includes('physio') || text.includes('ayur');
+    case 'Polytechnic / Diploma College':
+      return text.includes('polytechnic') || text.includes('diploma');
+    case 'Industrial Training Institute (ITI)':
+      return text.includes('iti') || text.includes('industrial training');
+    case 'Management / Law College':
+      return text.includes('management') || text.includes('mba') || text.includes('business school') || text.includes('law');
+    case 'Other College':
+      return !text.includes('engineering') && !text.includes('technology') && !text.includes('arts') && !text.includes('science') && !text.includes('pharm') && !text.includes('polytechnic') && !text.includes('iti') && !text.includes('management');
+
+    // Training Centers
+    case 'IT & Software Training Institute':
+      return text.includes('it ') || text.includes('software') || text.includes('computer') || text.includes('programming') || text.includes('full stack') || text.includes('digital') || text.includes('tally');
+    case 'Technical / Mechanical / CAD Training':
+      return text.includes('cad') || text.includes('mechanical') || text.includes('technical') || text.includes('cnc') || text.includes('hardware') || text.includes('welding');
+    case 'Textile & Apparel Training Center':
+      return text.includes('textile') || text.includes('apparel') || text.includes('garment') || text.includes('tailor') || text.includes('embroidery') || text.includes('knitting');
+    case 'Banking, Finance & Soft Skills Center':
+      return text.includes('banking') || text.includes('finance') || text.includes('soft skills') || text.includes('ssc') || text.includes('tnpsc') || text.includes('accounting');
+    case 'Government Training Partner (NSDC/TNSDC)':
+      return text.includes('nsdc') || text.includes('tnsdc') || text.includes('pmkvy') || text.includes('ddu-gky') || text.includes('government') || text.includes('rural');
+    case 'Healthcare & Nursing Training Center':
+      return text.includes('health') || text.includes('nursing') || text.includes('paramedical') || text.includes('first aid');
+    case 'Skill Development / Vocational Center':
+      return text.includes('skill') || text.includes('vocational') || text.includes('development') || text.includes('employability');
+    case 'Other Training Center':
+      return true;
+
+    // NGO & Community
+    case 'NGO / Non-Profit Organization':
+      return text.includes('ngo') || text.includes('non-profit') || text.includes('society') || text.includes('association');
+    case 'Community & Youth Center':
+      return text.includes('community') || text.includes('youth') || text.includes('sangam') || text.includes('mandram');
+    case 'Charitable Trust / Foundation':
+      return text.includes('trust') || text.includes('foundation') || text.includes('charit');
+    case 'Rural Development & SHG Partner':
+      return text.includes('rural') || text.includes('shg') || text.includes('self help') || text.includes('women');
+    case 'Other NGO / Community Partner':
+      return true;
+
+    // Vendors
+    case 'Staffing & Sourcing Agency':
+      return text.includes('staffing') || text.includes('sourcing') || text.includes('agency');
+    case 'Recruitment Vendor / Sub-Vendor':
+      return text.includes('recruitment') || text.includes('vendor');
+    case 'Corporate Placement Partner':
+      return text.includes('corporate') || text.includes('placement');
+    case 'Manpower Consultancy':
+      return text.includes('manpower') || text.includes('consultan');
+    case 'Other Sourcing Vendor':
+      return true;
+
+    default:
+      return text.includes(subLower);
+  }
+}
 
 export const recruiterService = {
   getRecruiters: async (params = {}) => {
@@ -105,6 +181,11 @@ export const recruiterService = {
       } else {
         filtered = filtered.filter((r) => (r.industry || '').toLowerCase().includes(indVal));
       }
+    }
+
+    // Subcategory filter
+    if (params.subcategory && params.subcategory !== 'ALL') {
+      filtered = filtered.filter((r) => matchSubcategory(r, params.subcategory));
     }
 
 
@@ -254,6 +335,19 @@ export const recruiterService = {
 
     const updated = await dbOps.update('recruiters', id, payload);
     await activityService.log('Lead Updated', 'Leads', updated.lead_id, `Updated details for ${updated.company_name}`);
+
+    // Log to recruiter_activities so admin dashboard tracks college contact updates
+    await recruiterActivityService.logActivity({
+      recruiter_id: updated.assigned_to || currentUser?.id,
+      recruiter_name: currentUser?.name || 'Recruiter',
+      action_type: 'College contact details updated',
+      job_id: updated.lead_id,
+      job_name: updated.company_name,
+      previous_status: existing.status,
+      new_status: updated.status,
+      description: `Updated contact details for ${updated.company_name}: SPOC: ${updated.recruiter_name || 'N/A'}, Phone: ${updated.mobile || 'N/A'}, Email: ${updated.email || 'N/A'}, District: ${updated.district || 'N/A'}`
+    });
+
     return updated;
   },
 
@@ -290,6 +384,19 @@ export const recruiterService = {
     });
 
     await activityService.log('Status Changed', 'Leads', updated.lead_id, `Changed status from ${oldStatus} to ${status}`);
+
+    // Log to recruiter_activities
+    await recruiterActivityService.logActivity({
+      recruiter_id: updated.assigned_to || currentUser?.id,
+      recruiter_name: currentUser?.name || 'Recruiter',
+      action_type: status === 'MOU_SIGNED' ? 'MOU signed' : (status === 'CONNECTED' ? 'College contacted' : 'College status changed'),
+      job_id: updated.lead_id,
+      job_name: updated.company_name,
+      previous_status: oldStatus,
+      new_status: status,
+      description: remarks || `College engagement status changed from ${oldStatus} to ${status} for ${updated.company_name} (SPOC: ${updated.recruiter_name || 'N/A'})`
+    });
+
     return updated;
   },
 

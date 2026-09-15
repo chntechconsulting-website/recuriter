@@ -86,7 +86,15 @@ export const authService = {
       throw err;
     }
 
-    // 5. Generate secure session token
+    // 5. Update user last_login in database
+    const nowIso = new Date().toISOString();
+    try {
+      await dbOps.update('users', user.id, { last_login: nowIso });
+    } catch {
+      // Non-fatal
+    }
+
+    // 6. Generate secure session token
     const token = `local_token_${user.id}_` + Date.now();
     return {
       access_token: token,
@@ -97,7 +105,9 @@ export const authService = {
         email: user.email,
         role: user.role,
         phone: user.phone,
-        status: user.status
+        status: user.status,
+        employee_id: user.employee_id || `EMP-${String(user.id).padStart(4, '0')}`,
+        last_login: nowIso
       }
     };
   },

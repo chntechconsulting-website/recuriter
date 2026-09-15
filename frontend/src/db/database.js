@@ -14,6 +14,9 @@ const TABLE_MAP = {
   communications: 'communication_history',
   status_history: 'status_history',
   activity_logs: 'activity_logs',
+  recruiter_activities: 'recruiter_activities',
+  recruiter_college_assignments: 'recruiter_college_assignments',
+  recruiter_vendor_assignments: 'recruiter_vendor_assignments',
   settings: 'system_settings'
 };
 
@@ -28,8 +31,8 @@ export function formatSqlValue(val, key = '') {
   return `'${str.replace(/'/g, "''")}'`;
 }
 
-const DB_NAME = 'RecruiterCandidateDB_v5';
-const DB_VERSION = 1;
+const DB_NAME = 'RecruiterCandidateDB_v7';
+const DB_VERSION = 3;
 
 const STORES = [
   'users',
@@ -39,6 +42,9 @@ const STORES = [
   'communications',
   'status_history',
   'activity_logs',
+  'recruiter_activities',
+  'recruiter_college_assignments',
+  'recruiter_vendor_assignments',
   'settings'
 ];
 

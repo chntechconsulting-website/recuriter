@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx';
 import { dbOps } from '../db/database';
 import { activityService } from './activityService';
 import { authService } from './authService';
+import { recruiterActivityService } from './recruiterActivityService';
 
 // Column alias mappings for Candidate Excel Import
 const CANDIDATE_COLUMN_MAP = {
@@ -275,6 +276,18 @@ export const candidateService = {
     });
 
     await activityService.log('Candidate Registered', 'Candidates', newCandidate.candidate_id, `Registered candidate ${newCandidate.name}`);
+    await recruiterActivityService.logActivity({
+      recruiter_id: assignedTo || currentUser?.id,
+      recruiter_name: currentUser?.name || 'Recruiter',
+      action_type: 'Candidate added',
+      candidate_id: newCandidate.candidate_id,
+      candidate_name: newCandidate.name,
+      job_name: newCandidate.position_interested_in || 'General Sourcing',
+      previous_status: null,
+      new_status: newCandidate.status || 'NEW',
+      description: `Registered candidate ${newCandidate.name} into recruitment pipeline.`
+    });
+
     return newCandidate;
   },
 
@@ -300,7 +313,37 @@ export const candidateService = {
     }
 
     const updated = await dbOps.update('candidates', id, payload);
+    const currentUser = authService.getSessionUser();
+    
     await activityService.log('Candidate Updated', 'Candidates', updated.candidate_id, `Updated candidate ${updated.name}`);
+
+    // If assignment changed
+    if (payload.assigned_to && Number(payload.assigned_to) !== Number(existing.assigned_to)) {
+      await recruiterActivityService.logActivity({
+        recruiter_id: payload.assigned_to,
+        recruiter_name: currentUser?.name || 'Recruiter',
+        action_type: 'Candidate assigned',
+        candidate_id: updated.candidate_id,
+        candidate_name: updated.name,
+        job_name: updated.position_interested_in || 'General Assignment',
+        previous_status: existing.status,
+        new_status: updated.status,
+        description: `Candidate assigned to recruiter ID ${payload.assigned_to}.`
+      });
+    } else {
+      await recruiterActivityService.logActivity({
+        recruiter_id: updated.assigned_to || currentUser?.id,
+        recruiter_name: currentUser?.name || 'Recruiter',
+        action_type: 'Candidate updated',
+        candidate_id: updated.candidate_id,
+        candidate_name: updated.name,
+        job_name: updated.position_interested_in || 'General Update',
+        previous_status: existing.status,
+        new_status: updated.status,
+        description: `Updated profile details for candidate ${updated.name}.`
+      });
+    }
+
     return updated;
   },
 
@@ -314,7 +357,32 @@ export const candidateService = {
       status: payload.status,
       remarks: payload.remarks
     });
+
+    const currentUser = authService.getSessionUser();
     await activityService.log('Candidate Status Changed', 'Candidates', updated.candidate_id, `Changed candidate status to ${payload.status}`);
+
+    // Specific action type resolution
+    const s = (payload.status || '').toUpperCase();
+    let actionType = 'Candidate status changed';
+    if (s === 'CONTACTED') actionType = 'Candidate contacted';
+    else if (s === 'SHORTLISTED' || s === 'SCREENED') actionType = 'Candidate shortlisted';
+    else if (s === 'INTERVIEW_SCHEDULED') actionType = 'Interview scheduled';
+    else if (s === 'SELECTED') actionType = 'Candidate selected';
+    else if (s === 'REJECTED') actionType = 'Candidate rejected';
+    else if (s === 'JOINED' || s === 'PLACED') actionType = 'Candidate joined';
+
+    await recruiterActivityService.logActivity({
+      recruiter_id: existing.assigned_to || currentUser?.id,
+      recruiter_name: currentUser?.name || 'Recruiter',
+      action_type: actionType,
+      candidate_id: existing.candidate_id,
+      candidate_name: existing.name,
+      job_name: existing.position_interested_in || 'General Pipeline',
+      previous_status: existing.status,
+      new_status: payload.status,
+      description: payload.remarks || `Status transitioned from ${existing.status} to ${payload.status}`
+    });
+
     return updated;
   },
 

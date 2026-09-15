@@ -21,6 +21,11 @@ import { Reports } from './pages/Reports';
 import { Users } from './pages/Users';
 import { ActivityLogs } from './pages/ActivityLogs';
 import { Settings } from './pages/Settings';
+import { RecruiterActivityList } from './pages/RecruiterActivityList';
+import { RecruiterActivityDetails } from './pages/RecruiterActivityDetails';
+import { AssignColleges } from './pages/AssignColleges';
+import { AssignVendors } from './pages/AssignVendors';
+import { AssignCandidates } from './pages/AssignCandidates';
 import { LoadingSpinner } from './components/common/LoadingSpinner';
 
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
@@ -63,6 +68,46 @@ export const App = () => {
             >
               <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="dashboard" element={<Dashboard />} />
+              <Route
+                path="admin/recruiters-activity"
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <RecruiterActivityList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admin/recruiters-activity/:id"
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <RecruiterActivityDetails />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admin/assign-candidates"
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <AssignCandidates />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admin/assign-colleges"
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <AssignColleges />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="admin/assign-vendors"
+                element={
+                  <ProtectedRoute requireAdmin={true}>
+                    <AssignVendors />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="recruiters" element={<RecruiterLeads />} />
               <Route path="recruiters/new" element={<AddRecruiterLead />} />
               <Route path="recruiters/:id" element={<RecruiterDetails />} />
