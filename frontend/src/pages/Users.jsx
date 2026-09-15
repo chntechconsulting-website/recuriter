@@ -15,7 +15,9 @@ import {
   User,
   Mail,
   Phone,
-  Shield
+  Shield,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export const Users = () => {
@@ -25,6 +27,7 @@ export const Users = () => {
   const [editingUser, setEditingUser] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -65,6 +68,7 @@ export const Users = () => {
       status: 'ACTIVE',
       password: ''
     });
+    setShowPassword(false);
     setModalOpen(true);
   };
 
@@ -78,6 +82,7 @@ export const Users = () => {
       status: u.status,
       password: ''
     });
+    setShowPassword(false);
     setModalOpen(true);
   };
 
@@ -287,14 +292,25 @@ export const Users = () => {
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 {editingUser ? 'Password (Leave blank to keep unchanged)' : 'Initial Password *'}
               </label>
-              <input
-                type="password"
-                required={!editingUser}
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="********"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required={!editingUser}
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="********"
+                  className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors focus:outline-none"
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
