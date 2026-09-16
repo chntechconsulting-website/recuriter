@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { activityService } from '../services/activityService';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { Pagination } from '../components/common/Pagination';
@@ -6,6 +8,7 @@ import { formatDateTime } from '../utils/formatters';
 import { History, ShieldAlert, Filter, User, Clock } from 'lucide-react';
 
 export const ActivityLogs = () => {
+  const { isAdmin, loading: authLoading } = useAuth();
   const [logs, setLogs] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -33,8 +36,21 @@ export const ActivityLogs = () => {
   }, [page, pageSize, moduleFilter]);
 
   useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+    if (isAdmin) {
+      fetchLogs();
+    }
+  }, [fetchLogs, isAdmin]);
+  if (authLoading) {
+    return (
+      <div className="py-16 text-center">
+        <LoadingSpinner text="Checking authorization..." />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in pb-12">
