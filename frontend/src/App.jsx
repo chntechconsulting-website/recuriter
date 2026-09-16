@@ -127,14 +127,7 @@ export const App = () => {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="activity-logs"
-                element={
-                  <ProtectedRoute requireAdmin={true}>
-                    <ActivityLogs />
-                  </ProtectedRoute>
-                }
-              />
+              <Route path="activity-logs" element={<ActivityLogs />} />
               <Route path="settings" element={<Settings />} />
             </Route>
 

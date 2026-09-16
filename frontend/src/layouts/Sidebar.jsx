@@ -30,10 +30,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { to: '/follow-ups', icon: Calendar, label: 'Follow-ups' },
     { to: '/import', icon: FileSpreadsheet, label: 'Bulk Import Data' },
     { to: '/reports', icon: BarChart2, label: 'Reports & Analytics' },
-    ...(isAdmin ? [
-      { to: '/users', icon: Users, label: 'Staff Management' },
-      { to: '/activity-logs', icon: History, label: 'Activity Logs' }
-    ] : []),
+    ...(isAdmin ? [{ to: '/users', icon: Users, label: 'Staff Management' }] : []),
+    { to: '/activity-logs', icon: History, label: 'Activity Logs' },
     { to: '/settings', icon: Settings, label: 'System Settings' },
   ];
 

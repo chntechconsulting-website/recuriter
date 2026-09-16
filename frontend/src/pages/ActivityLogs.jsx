@@ -8,7 +8,7 @@ import { formatDateTime } from '../utils/formatters';
 import { History, ShieldAlert, Filter, User, Clock } from 'lucide-react';
 
 export const ActivityLogs = () => {
-  const { isAdmin, loading: authLoading } = useAuth();
+  const { user, isAdmin, isPrivileged, loading: authLoading } = useAuth();
   const [logs, setLogs] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -23,7 +23,8 @@ export const ActivityLogs = () => {
       const data = await activityService.getLogs({
         page,
         page_size: pageSize,
-        module: moduleFilter !== 'ALL' ? moduleFilter : undefined
+        module: moduleFilter !== 'ALL' ? moduleFilter : undefined,
+        user_id: !isPrivileged && user?.id ? user.id : undefined
       });
       setLogs(data.items);
       setTotal(data.total);
@@ -33,13 +34,12 @@ export const ActivityLogs = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, pageSize, moduleFilter]);
+  }, [page, pageSize, moduleFilter, isPrivileged, user?.id]);
 
   useEffect(() => {
-    if (isAdmin) {
-      fetchLogs();
-    }
-  }, [fetchLogs, isAdmin]);
+    fetchLogs();
+  }, [fetchLogs]);
+
   if (authLoading) {
     return (
       <div className="py-16 text-center">
@@ -48,16 +48,19 @@ export const ActivityLogs = () => {
     );
   }
 
-  if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
   return (
     <div className="space-y-6 animate-fade-in pb-12">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-2xl border border-slate-100 shadow-xs">
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Audit Trail & Activity Logs</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Immutable record of all lead changes, status transitions, imports, and user logins</p>
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+            {isPrivileged ? 'Audit Trail & Activity Logs' : 'My Activity Logs & Audit Trail'}
+          </h2>
+          <p className="text-xs text-slate-500 mt-0.5">
+            {isPrivileged
+              ? 'Immutable record of all lead changes, status transitions, imports, and user logins across all staff'
+              : `Showing your personal activity history and logged operations (${user?.name || 'My Logs'})`
+            }
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
