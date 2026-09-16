@@ -36,7 +36,7 @@ export const AddRecruiterLead = () => {
     industry: 'College',
     job_role: '',
     job_description: '',
-    candidates_required: 150,
+    candidates_required: 0,
     salary_range: '',
     qualification: '',
     experience_required: '',

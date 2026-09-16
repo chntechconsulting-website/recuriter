@@ -68,7 +68,7 @@ export const dashboardService = {
         sql.query(`SELECT status, count(*) FROM recruiter_leads ${recWhere} GROUP BY status`),
         sql.query(`SELECT count(*) FROM candidates ${candWhere}`),
         sql.query(`SELECT COALESCE(SUM(candidates_required), 0) as total FROM recruiter_leads ${recWhere}`),
-        sql.query(`SELECT count(*) FROM recruiter_leads ${recWhereAnd} job_role IS NOT NULL AND job_role != ''`),
+        sql.query(`SELECT count(*) FROM recruiter_leads ${recWhereAnd} job_role IS NOT NULL AND job_role != '' AND candidates_required > 0`),
         sql.query(`SELECT district, count(*) FROM recruiter_leads ${recWhereAnd} district IS NOT NULL AND district != '' GROUP BY district ORDER BY count(*) DESC LIMIT 10`),
         sql.query(`SELECT lead_source, count(*) FROM recruiter_leads ${recWhereAnd} lead_source IS NOT NULL AND lead_source != '' GROUP BY lead_source ORDER BY count(*) DESC`),
         sql.query(`SELECT TO_CHAR(created_at, 'YYYY-MM-DD') as date, count(*) FROM recruiter_leads ${recWhereAnd} created_at >= NOW() - INTERVAL '30 days' GROUP BY date ORDER BY date ASC`),
@@ -77,8 +77,8 @@ export const dashboardService = {
 
       const total_recruiters = Number(recCountRes?.[0]?.count) || 3656;
       const total_candidates = Number(candCountRes?.[0]?.count) || 2081;
-      const total_candidates_required = Number(reqSumRes?.[0]?.total) || 76655;
-      const total_job_requirements = Number(roleCountRes?.[0]?.count) || 3656;
+      const total_candidates_required = reqSumRes?.[0]?.total !== undefined ? Number(reqSumRes[0].total) || 0 : 0;
+      const total_job_requirements = roleCountRes?.[0]?.count !== undefined ? Number(roleCountRes[0].count) || 0 : 0;
 
       const statusCounts = {
         YET_TO_CONNECT: 0,
@@ -210,8 +210,8 @@ export const dashboardService = {
         interested: statusCounts.INTERESTED,
         no_response: statusCounts.NO_RESPONSE,
         mou_signed: statusCounts.MOU_SIGNED,
-        total_job_requirements: 3656,
-        total_candidates_required: 76655,
+        total_job_requirements: 0,
+        total_candidates_required: 0,
         todays_follow_ups: 0,
         overdue_follow_ups: 0,
         total_candidates,
