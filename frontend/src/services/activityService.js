@@ -18,6 +18,9 @@ export const activityService = {
     if (params.action && params.action !== 'ALL') {
       filtered = filtered.filter(l => l.action === params.action);
     }
+    if (params.user_id) {
+      filtered = filtered.filter(l => Number(l.user_id) === Number(params.user_id));
+    }
 
     const page = Number(params.page) || 1;
     const pageSize = Number(params.page_size) || 20;

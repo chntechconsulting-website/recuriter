@@ -97,11 +97,38 @@ export const Dashboard = () => {
   const fetchDashboardData = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
+      const isStaff = !isPrivileged && !!user?.id;
+
+      // Activity stream: staff see their own activities; admins see all system activities
+      const activityPromise = isStaff
+        ? Promise.all([
+            recruiterActivityService.getRecruiterActivities(user.id, { page: 1, page_size: 6 }).catch(() => ({ items: [] })),
+            activityService.getLogs({ page: 1, page_size: 6, user_id: user.id }).catch(() => ({ items: [] }))
+          ]).then(([recActs, sysLogs]) => {
+            const combined = [
+              ...(recActs?.items || []).map((a) => ({
+                id: `rec-${a.id}`,
+                user_name: a.recruiter_name || user?.name || 'Me',
+                details: a.description || `${a.action_type}${a.candidate_name ? ` · ${a.candidate_name}` : ''}`,
+                created_at: a.created_at
+              })),
+              ...(sysLogs?.items || []).map((l) => ({
+                id: `sys-${l.id}`,
+                user_name: l.user_name || user?.name || 'Me',
+                details: l.details || l.action,
+                created_at: l.created_at
+              }))
+            ];
+            combined.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            return { items: combined.slice(0, 6) };
+          })
+        : activityService.getLogs({ page: 1, page_size: 6 }).catch(() => ({ items: [] }));
+
       const [metrics, todays, overdues, activities, recruiters] = await Promise.all([
         dashboardService.getDashboardMetrics(),
         followUpService.getFollowUps({ category: 'today' }).catch(() => []),
         followUpService.getFollowUps({ category: 'overdue' }).catch(() => []),
-        activityService.getLogs({ page: 1, page_size: 6 }).catch(() => ({ items: [] })),
+        activityPromise,
         recruiterActivityService.getAllRecruitersWithKpis({ includeAdmins: false }).catch(() => [])
       ]);
 
