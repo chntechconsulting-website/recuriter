@@ -191,6 +191,9 @@ export const assignmentService = {
 
     const users = await dbOps.getAll('users');
     const targetRecruiter = users.find((u) => Number(u.id) === recId);
+    if ((targetRecruiter?.role || '').toUpperCase() === 'ADMIN') {
+      throw new Error('Administrators cannot be assigned colleges. Please select a recruiter.');
+    }
     const recruiterName = targetRecruiter?.name || 'Recruiter';
 
     const leads = await dbOps.getAll('recruiters');
@@ -261,11 +264,14 @@ export const assignmentService = {
       dbOps.getAll('recruiters')
     ]);
 
+    const newRecruiter = users.find((u) => Number(u.id) === newRecId);
+    if ((newRecruiter?.role || '').toUpperCase() === 'ADMIN') {
+      throw new Error('Administrators cannot be assigned colleges. Please select a recruiter.');
+    }
+    const newRecruiterName = newRecruiter?.name || 'Recruiter';
     const college = leads.find((l) => Number(l.id) === cId);
     const collegeName = college?.company_name || 'College';
     const collegeCode = college?.lead_id || `REC-${String(cId).padStart(6, '0')}`;
-    const newRecruiter = users.find((u) => Number(u.id) === newRecId);
-    const newRecruiterName = newRecruiter?.name || 'Recruiter';
 
     // Remove any previous active assignment for this college
     await sql.query(`DELETE FROM recruiter_college_assignments WHERE college_id = ${cId}`);
@@ -502,6 +508,9 @@ export const assignmentService = {
 
     const users = await dbOps.getAll('users');
     const targetRecruiter = users.find((u) => Number(u.id) === recId);
+    if ((targetRecruiter?.role || '').toUpperCase() === 'ADMIN') {
+      throw new Error('Administrators cannot be assigned vendors. Please select a recruiter.');
+    }
     const recruiterName = targetRecruiter?.name || 'Recruiter';
 
     const leads = await dbOps.getAll('recruiters');
@@ -568,11 +577,14 @@ export const assignmentService = {
       dbOps.getAll('recruiters')
     ]);
 
+    const newRecruiter = users.find((u) => Number(u.id) === newRecId);
+    if ((newRecruiter?.role || '').toUpperCase() === 'ADMIN') {
+      throw new Error('Administrators cannot be assigned vendors. Please select a recruiter.');
+    }
+    const newRecruiterName = newRecruiter?.name || 'Recruiter';
     const vendor = leads.find((l) => Number(l.id) === vId);
     const vendorName = vendor?.company_name || 'Vendor';
     const vendorCode = vendor?.lead_id || `VEN-${String(vId).padStart(6, '0')}`;
-    const newRecruiter = users.find((u) => Number(u.id) === newRecId);
-    const newRecruiterName = newRecruiter?.name || 'Recruiter';
 
     await sql.query(`DELETE FROM recruiter_vendor_assignments WHERE vendor_id = ${vId}`);
 
@@ -790,6 +802,9 @@ export const assignmentService = {
     const recId = Number(recruiterId);
     const users = await dbOps.getAll('users');
     const recruiter = users.find((u) => Number(u.id) === recId);
+    if ((recruiter?.role || '').toUpperCase() === 'ADMIN') {
+      throw new Error('Administrators cannot be assigned candidates. Please select a recruiter.');
+    }
     const recruiterName = recruiter?.name || 'Recruiter';
 
     const idsStr = candidateIds.map((id) => Number(id)).join(', ');
@@ -830,6 +845,9 @@ export const assignmentService = {
 
     const users = await dbOps.getAll('users');
     const newRecruiter = users.find((u) => Number(u.id) === newRecId);
+    if ((newRecruiter?.role || '').toUpperCase() === 'ADMIN') {
+      throw new Error('Administrators cannot be assigned candidates. Please select a recruiter.');
+    }
     const newRecruiterName = newRecruiter?.name || 'Recruiter';
 
     const candidates = await dbOps.getAll('candidates');

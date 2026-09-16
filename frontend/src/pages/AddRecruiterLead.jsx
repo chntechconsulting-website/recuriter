@@ -64,11 +64,12 @@ export const AddRecruiterLead = () => {
     userService.getSimpleUsers().then((res) => {
       setUsers(res);
       const districtOwner = getDistrictOwnerId('Chennai', res);
-      const currentUserId = user?.id || (res && res.length > 0 ? res[0].id : '');
+      const isStaffUser = (user?.role || '').toUpperCase() === 'STAFF' || (user?.role || '').toUpperCase() === 'RECRUITER';
+      const defaultAssigneeId = districtOwner || (isStaffUser ? user?.id : (res && res.length > 0 ? res[0].id : ''));
       setFormData((prev) => ({
         ...prev,
-        sourced_by: prev.sourced_by || currentUserId,
-        assigned_to: prev.assigned_to || districtOwner || currentUserId
+        sourced_by: prev.sourced_by || user?.id || (res && res.length > 0 ? res[0].id : ''),
+        assigned_to: prev.assigned_to || defaultAssigneeId
       }));
     }).catch(() => {});
   }, [user]);

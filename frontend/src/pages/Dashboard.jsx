@@ -144,8 +144,8 @@ export const Dashboard = () => {
       setRecentActivities(activities?.items || []);
       setRecruiterKpis(recruiters || []);
 
-      // If non-admin recruiter or viewing personal portfolio, fetch assigned portfolio
-      if (user?.id) {
+      // If non-admin recruiter, fetch assigned portfolio
+      if (!isPrivileged && user?.id) {
         setPortfolioLoading(true);
         try {
           const recDetails = await recruiterActivityService.getRecruiterDetails(user.id);
@@ -713,8 +713,9 @@ export const Dashboard = () => {
         </div>
       )}
 
-      {/* Recruiter Assigned Portfolio (3 Tabs: Candidates, Colleges, Vendors) */}
-      <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs space-y-4">
+      {/* Recruiter Assigned Portfolio (3 Tabs: Candidates, Colleges, Vendors) - Only for staff recruiters */}
+      {!isPrivileged && (
+        <div className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div>
             <div className="flex items-center gap-2">
@@ -977,6 +978,7 @@ export const Dashboard = () => {
           </div>
         )}
       </div>
+      )}
 
       {/* Operational Section: Follow-ups Queue + Live Activity Stream */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">

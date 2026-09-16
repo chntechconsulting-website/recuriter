@@ -82,7 +82,7 @@ export const AssignCandidates = () => {
     try {
       const data = await userService.getUsers();
       const list = Array.isArray(data) ? data : (data?.items || []);
-      const recs = list.filter((u) => u.status === 'ACTIVE' && (u.role === 'STAFF' || u.role === 'RECRUITER' || u.role === 'ADMIN'));
+      const recs = list.filter((u) => u.status === 'ACTIVE' && (u.role === 'STAFF' || u.role === 'RECRUITER'));
       setRecruiters(recs);
     } catch {
       // Non-fatal

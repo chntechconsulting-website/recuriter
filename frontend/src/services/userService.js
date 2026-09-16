@@ -27,9 +27,13 @@ export const userService = {
     return { items, total, page, page_size: pageSize, total_pages };
   },
 
-  getSimpleUsers: async () => {
+  getSimpleUsers: async (options = {}) => {
     const users = await dbOps.getAll('users');
-    return users.map(u => ({
+    let filtered = users;
+    if (!options.includeAdmins) {
+      filtered = filtered.filter(u => (u.role || '').toUpperCase() !== 'ADMIN');
+    }
+    return filtered.map(u => ({
       id: u.id,
       name: u.name,
       email: u.email,
