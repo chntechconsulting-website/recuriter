@@ -308,12 +308,13 @@ export const RecruiterActivityDetails = () => {
         </div>
       </div>
 
-      {/* Recruiter Profile Banner */}
-      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200 shadow-xs">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
-          {/* Left: Avatar & Identity */}
-          <div className="lg:col-span-5 flex items-center gap-4.5">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-md shadow-blue-500/20 shrink-0">
+      {/* Recruiter Profile Banner Card */}
+      <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-xs space-y-6">
+        {/* Top: Identity, Status & Primary Metrics */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+          <div className="flex items-start sm:items-center gap-5">
+            {/* Avatar Initials Badge */}
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-indigo-700 text-white flex items-center justify-center font-black text-2xl shadow-lg shadow-blue-500/20 shrink-0 select-none">
               {profile.name
                 .split(' ')
                 .map((n) => n[0])
@@ -321,196 +322,237 @@ export const RecruiterActivityDetails = () => {
                 .toUpperCase()
                 .slice(0, 2)}
             </div>
-            <div className="space-y-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h2 className="text-xl font-extrabold text-slate-900 truncate">{profile.name}</h2>
+
+            {/* Recruiter Identity Details */}
+            <div className="space-y-2 min-w-0">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">{profile.name}</h2>
                 <span
-                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[10px] ${
+                  className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full font-bold text-xs ${
                     profile.status === 'ACTIVE'
-                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                      : 'bg-rose-100 text-rose-800 border border-rose-200'
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/80'
+                      : 'bg-rose-50 text-rose-700 border border-rose-200/80'
                   }`}
                 >
                   <span
-                    className={`w-1.5 h-1.5 rounded-full ${
+                    className={`w-2 h-2 rounded-full ${
                       profile.status === 'ACTIVE' ? 'bg-emerald-500' : 'bg-rose-500'
                     }`}
                   />
                   {profile.status}
                 </span>
-                <span className="px-2 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-bold rounded-md uppercase">
+                <span className="px-2.5 py-0.5 bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold rounded-lg uppercase tracking-wider">
                   {profile.role}
+                </span>
+                <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-lg border border-blue-200">
+                  {profile.employee_id}
                 </span>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 font-medium">
-                <span className="flex items-center gap-1 text-slate-600">
+              <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs text-slate-500">
+                <span className="flex items-center gap-1.5 font-medium text-slate-700">
                   <Mail className="w-3.5 h-3.5 text-slate-400" />
                   {profile.email}
                 </span>
                 {profile.phone && (
-                  <span className="flex items-center gap-1 text-slate-600">
+                  <span className="flex items-center gap-1.5 font-medium text-slate-700">
                     <Phone className="w-3.5 h-3.5 text-slate-400" />
                     {profile.phone}
                   </span>
                 )}
-              </div>
-
-              <div className="text-[11px] text-slate-400 pt-0.5 flex items-center gap-1.5">
-                <Clock className="w-3 h-3 text-slate-400" />
-                <span>
-                  Last Login:{' '}
-                  <strong className="text-slate-700 font-semibold">
-                    {profile.last_login ? formatDateTime(profile.last_login) : 'Never logged in'}
-                  </strong>
+                <span className="flex items-center gap-1.5 text-slate-400">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  Last Active: <strong className="text-slate-700 font-semibold">{profile.last_login ? formatDateTime(profile.last_login) : 'Never logged in'}</strong>
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Right: Assigned Portfolio (Candidates, Colleges & Vendors) Tabbed Card */}
-          <div className="lg:col-span-7 bg-slate-50/90 rounded-2xl p-4 border border-slate-200">
-            <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-slate-200/60">
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setAssignedViewTab('candidates')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                    assignedViewTab === 'candidates'
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                  }`}
-                >
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span>Candidates</span>
-                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
-                    assignedViewTab === 'candidates' ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-700'
-                  }`}>
-                    {assigned_candidates.length}
-                  </span>
-                </button>
+          {/* Quick Stat Counter Cards */}
+          <div className="flex items-center gap-3 self-start lg:self-center shrink-0">
+            <div className="px-4 py-2.5 rounded-2xl bg-blue-50/70 border border-blue-100 text-center min-w-[105px]">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600 block">Candidates</span>
+              <span className="text-xl font-black text-blue-900">{assigned_candidates.length.toLocaleString()}</span>
+            </div>
+            <div className="px-4 py-2.5 rounded-2xl bg-indigo-50/70 border border-indigo-100 text-center min-w-[105px]">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 block">Colleges & Vendors</span>
+              <span className="text-xl font-black text-indigo-900">{(assigned_colleges.length + assigned_vendors.length).toLocaleString()}</span>
+            </div>
+            <div className="px-4 py-2.5 rounded-2xl bg-slate-50 border border-slate-200 text-center min-w-[105px]">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-500 block">Logged Actions</span>
+              <span className="text-xl font-black text-slate-800">{(kpis.total_activities || 0).toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
 
-                <button
-                  type="button"
-                  onClick={() => setAssignedViewTab('colleges_vendors')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-                    assignedViewTab === 'colleges_vendors' || assignedViewTab === 'colleges' || assignedViewTab === 'vendors'
-                      ? 'bg-indigo-600 text-white shadow-xs'
-                      : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                  }`}
-                >
-                  <Building className="w-3.5 h-3.5" />
-                  <span>Colleges & Vendors</span>
-                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-extrabold ${
-                    assignedViewTab === 'colleges_vendors' || assignedViewTab === 'colleges' || assignedViewTab === 'vendors'
-                      ? 'bg-indigo-700 text-white'
-                      : 'bg-slate-100 text-slate-700'
-                  }`}>
-                    {assigned_colleges.length + assigned_vendors.length}
-                  </span>
-                </button>
-              </div>
+        {/* Bottom: Assigned Portfolio Allocation Explorer */}
+        <div className="space-y-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setAssignedViewTab('candidates')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  assignedViewTab === 'candidates'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <UserCheck className="w-4 h-4" />
+                <span>Assigned Candidates</span>
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                  assignedViewTab === 'candidates' ? 'bg-blue-700 text-white' : 'bg-white text-slate-700'
+                }`}>
+                  {assigned_candidates.length}
+                </span>
+              </button>
 
-              {assignedViewTab === 'candidates' ? (
-                <Link
-                  to={`/candidates?assigned_to=${id}`}
-                  className="text-[11px] font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
-                >
-                  <span>View All ({assigned_candidates.length})</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
-              ) : (
-                <Link
-                  to={`/recruiters?assigned_to=${id}`}
-                  className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-                >
-                  <span>View All ({assigned_colleges.length + assigned_vendors.length})</span>
-                  <ArrowRight className="w-3 h-3" />
-                </Link>
-              )}
+              <button
+                type="button"
+                onClick={() => setAssignedViewTab('colleges_vendors')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                  assignedViewTab === 'colleges_vendors' || assignedViewTab === 'colleges' || assignedViewTab === 'vendors'
+                    ? 'bg-indigo-600 text-white shadow-xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Building className="w-4 h-4" />
+                <span>Assigned Colleges & Vendors</span>
+                <span className={`px-2 py-0.5 rounded-md text-[10px] font-extrabold ${
+                  assignedViewTab === 'colleges_vendors' || assignedViewTab === 'colleges' || assignedViewTab === 'vendors'
+                    ? 'bg-indigo-700 text-white'
+                    : 'bg-white text-slate-700'
+                }`}>
+                  {assigned_colleges.length + assigned_vendors.length}
+                </span>
+              </button>
             </div>
 
             {assignedViewTab === 'candidates' ? (
+              <Link
+                to={`/candidates?assigned_to=${id}`}
+                className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 self-start sm:self-auto group"
+              >
+                <span>Open Full Candidates Directory ({assigned_candidates.length})</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            ) : (
+              <Link
+                to={`/recruiters?assigned_to=${id}`}
+                className="text-xs font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 self-start sm:self-auto group"
+              >
+                <span>Open Full Partners Directory ({assigned_colleges.length + assigned_vendors.length})</span>
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+              </Link>
+            )}
+          </div>
+
+          {/* Tab Content: Clean Cards Grid */}
+          <div className="bg-slate-50/80 rounded-2xl p-4 border border-slate-200/80">
+            {assignedViewTab === 'candidates' ? (
               assigned_candidates.length === 0 ? (
-                <div className="py-4 text-center">
+                <div className="py-8 text-center">
                   <p className="text-xs text-slate-400 italic mb-2">No candidates assigned to this recruiter yet.</p>
                   <Link
-                    to="/candidates"
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-xs font-bold transition"
+                    to="/admin/assign-candidates"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition shadow-xs"
                   >
-                    <PlusCircle className="w-3 h-3" />
+                    <PlusCircle className="w-3.5 h-3.5" />
                     <span>Assign Candidates</span>
                   </Link>
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-1">
-                  {assigned_candidates.map((cand) => (
-                    <Link
-                      key={cand.id}
-                      to={`/candidates/${cand.id}`}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-200 hover:border-blue-300 rounded-xl text-xs font-semibold text-slate-700 transition shadow-xs group"
-                      title={`${cand.name} (${cand.candidate_id}) - ${cand.educational_qualification} | Status: ${cand.status} | Phone: ${cand.contact_number}`}
-                    >
-                      <UserCheck className="w-3.5 h-3.5 text-blue-500 shrink-0" />
-                      <span className="font-bold text-slate-900 truncate max-w-[150px] group-hover:text-blue-600">{cand.name}</span>
-                      <span className="text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded font-mono font-bold">
-                        {cand.status}
-                      </span>
-                    </Link>
-                  ))}
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                    {assigned_candidates.slice(0, 8).map((cand) => (
+                      <Link
+                        key={cand.id}
+                        to={`/candidates/${cand.id}`}
+                        className="p-3 bg-white rounded-xl border border-slate-200/90 hover:border-blue-300 hover:shadow-xs transition group flex items-center justify-between gap-2"
+                        title={`${cand.name} (${cand.candidate_id}) - ${cand.educational_qualification || 'N/A'}`}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-xs font-bold text-slate-800 truncate group-hover:text-blue-600">{cand.name}</p>
+                          <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                            {cand.location || 'Tamil Nadu'} · {cand.educational_qualification || 'Fresher'}
+                          </p>
+                        </div>
+                        <span className="text-[10px] text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md font-mono font-bold shrink-0 border border-blue-100">
+                          {cand.status}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+
+                  {assigned_candidates.length > 8 && (
+                    <div className="flex items-center justify-between pt-2.5 border-t border-slate-200/70 text-xs text-slate-500 font-medium">
+                      <span>Previewing 8 of {assigned_candidates.length.toLocaleString()} assigned candidates</span>
+                      <Link
+                        to={`/candidates?assigned_to=${id}`}
+                        className="font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                      >
+                        <span>View all {assigned_candidates.length.toLocaleString()} candidates</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  )}
                 </div>
               )
             ) : (
               (assigned_colleges.length === 0 && assigned_vendors.length === 0) ? (
-                <div className="py-4 text-center">
+                <div className="py-8 text-center">
                   <p className="text-xs text-slate-400 italic mb-2">No colleges or vendors assigned to this recruiter yet.</p>
                   <Link
-                    to="/recruiters"
-                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold transition"
+                    to="/admin/assign-colleges"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-700 transition shadow-xs"
                   >
-                    <PlusCircle className="w-3 h-3" />
-                    <span>View Colleges & Vendors</span>
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Assign Institutions</span>
                   </Link>
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-1">
-                  {assigned_colleges.map((col) => {
-                    const isNgo = (col.college_type || '').toLowerCase().includes('ngo');
-                    const isTraining = (col.college_type || '').toLowerCase().includes('training');
-                    const badgeColor = isNgo
-                      ? 'bg-amber-50 text-amber-700 border-amber-200'
-                      : isTraining
-                      ? 'bg-teal-50 text-teal-700 border-teal-200'
-                      : 'bg-indigo-50 text-indigo-700 border-indigo-200';
-                    const label = col.college_type || 'College';
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                    {[...assigned_colleges, ...assigned_vendors].slice(0, 8).map((item) => {
+                      const isVendor = !!item.vendor_name;
+                      const name = item.college_name || item.vendor_name || 'Institution';
+                      const district = item.district || 'Tamil Nadu';
+                      const type = item.college_type || (isVendor ? 'Vendor' : 'College');
+                      return (
+                        <Link
+                          key={isVendor ? `ven-${item.id}` : `col-${item.id}`}
+                          to={`/recruiters/${item.id}`}
+                          className="p-3 bg-white rounded-xl border border-slate-200/90 hover:border-indigo-300 hover:shadow-xs transition group flex items-center justify-between gap-2"
+                          title={`${name} - ${district} (${type})`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-600">{name}</p>
+                            <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                              {district} · {type}
+                            </p>
+                          </div>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-md font-bold shrink-0 border ${
+                            isVendor ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+                          }`}>
+                            {isVendor ? 'Vendor' : 'College'}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
 
-                    return (
-                      <div
-                        key={`col-${col.id}`}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-200 hover:border-indigo-300 rounded-xl text-xs font-semibold text-slate-700 transition shadow-xs"
-                        title={`[${label}] ${col.college_name} (${col.college_code}) - ${col.district} | SPOC: ${col.contact_person} (${col.mobile})`}
+                  {(assigned_colleges.length + assigned_vendors.length) > 8 && (
+                    <div className="flex items-center justify-between pt-2.5 border-t border-slate-200/70 text-xs text-slate-500 font-medium">
+                      <span>Previewing 8 of {(assigned_colleges.length + assigned_vendors.length).toLocaleString()} assigned institutions</span>
+                      <Link
+                        to={`/recruiters?assigned_to=${id}`}
+                        className="font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
                       >
-                        <GraduationCap className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                        <span className="font-bold text-slate-900 truncate max-w-[150px]">{col.college_name}</span>
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold border ${badgeColor}`}>
-                          {label}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  {assigned_vendors.map((ven) => (
-                    <div
-                      key={`ven-${ven.id}`}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border border-slate-200 hover:border-purple-300 rounded-xl text-xs font-semibold text-slate-700 transition shadow-xs"
-                      title={`[Vendor] ${ven.vendor_name} (${ven.vendor_code}) - ${ven.district} | Contact: ${ven.contact_person} (${ven.mobile})`}
-                    >
-                      <Building className="w-3.5 h-3.5 text-purple-500 shrink-0" />
-                      <span className="font-bold text-slate-900 truncate max-w-[150px]">{ven.vendor_name}</span>
-                      <span className="text-[10px] text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded font-bold border border-purple-200">
-                        Vendor
-                      </span>
+                        <span>View all {(assigned_colleges.length + assigned_vendors.length).toLocaleString()} institutions</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
                     </div>
-                  ))}
+                  )}
                 </div>
               )
             )}
@@ -519,100 +561,118 @@ export const RecruiterActivityDetails = () => {
       </div>
 
       {/* KPI Section - Row 1: Assigned Portfolio & Activities Counts */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
         {/* 1. Assigned Candidates */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs hover:border-blue-200 transition">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600">Assigned Candidates</p>
-            <Users className="w-4 h-4 text-blue-500" />
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-blue-600">Assigned Candidates</p>
+            <span className="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+              <Users className="w-4 h-4" />
+            </span>
           </div>
-          <div className="text-2xl font-black text-slate-900 mt-1">{kpis.assigned_candidates_count}</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">In recruiter pool</div>
+          <div className="text-2xl font-black text-slate-900 mt-2">{kpis.assigned_candidates_count.toLocaleString()}</div>
+          <div className="text-xs text-slate-400 mt-0.5">In recruiter pool</div>
         </div>
 
         {/* 2. Assigned Colleges & Vendors */}
-        <div className="bg-white p-4 rounded-2xl border border-indigo-100 shadow-xs bg-gradient-to-b from-indigo-50/40 to-white">
+        <div className="bg-white p-4 rounded-2xl border border-indigo-100 shadow-xs bg-gradient-to-b from-indigo-50/40 to-white hover:border-indigo-200 transition">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600">Colleges & Vendors</p>
-            <Building className="w-4 h-4 text-indigo-500" />
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-indigo-600">Colleges & Vendors</p>
+            <span className="p-1.5 bg-indigo-50 text-indigo-600 rounded-lg">
+              <Building className="w-4 h-4" />
+            </span>
           </div>
-          <div className="text-2xl font-black text-indigo-900 mt-1">
-            {(kpis.assigned_colleges_count || 0) + (kpis.assigned_vendors_count || 0)}
+          <div className="text-2xl font-black text-indigo-950 mt-2">
+            {((kpis.assigned_colleges_count || 0) + (kpis.assigned_vendors_count || 0)).toLocaleString()}
           </div>
-          <div className="text-[11px] text-indigo-500 mt-0.5">
-            {kpis.assigned_colleges_count || 0} Colleges • {kpis.assigned_vendors_count || 0} Vendors
+          <div className="text-xs text-indigo-600 font-medium mt-0.5">
+            {kpis.assigned_colleges_count || 0} Colleges · {kpis.assigned_vendors_count || 0} Vendors
           </div>
         </div>
 
-        {/* 3. Candidate Activities */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+        {/* 3. Candidate Actions */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs hover:border-sky-200 transition">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-sky-600">Candidate Actions</p>
-            <Clock className="w-4 h-4 text-sky-500" />
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-sky-600">Candidate Actions</p>
+            <span className="p-1.5 bg-sky-50 text-sky-600 rounded-lg">
+              <Clock className="w-4 h-4" />
+            </span>
           </div>
-          <div className="text-2xl font-black text-sky-900 mt-1">{kpis.candidate_activities_count}</div>
-          <div className="text-[11px] text-slate-400 mt-0.5">Logged candidate events</div>
+          <div className="text-2xl font-black text-sky-950 mt-2">{kpis.candidate_activities_count.toLocaleString()}</div>
+          <div className="text-xs text-slate-400 mt-0.5">Logged candidate events</div>
         </div>
 
-        {/* 4. College & Vendor Activities */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+        {/* 4. College & Vendor Actions */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-xs hover:border-emerald-200 transition">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600">College & Vendor Actions</p>
-            <CalendarCheck className="w-4 h-4 text-emerald-500" />
+            <p className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-600">Partner Actions</p>
+            <span className="p-1.5 bg-emerald-50 text-emerald-600 rounded-lg">
+              <CalendarCheck className="w-4 h-4" />
+            </span>
           </div>
-          <div className="text-2xl font-black text-emerald-900 mt-1">
-            {(kpis.college_activities_count || 0) + (kpis.vendor_activities_count || 0)}
+          <div className="text-2xl font-black text-emerald-950 mt-2">
+            {((kpis.college_activities_count || 0) + (kpis.vendor_activities_count || 0)).toLocaleString()}
           </div>
-          <div className="text-[11px] text-emerald-600 mt-0.5">
-            {kpis.college_activities_count || 0} College • {kpis.vendor_activities_count || 0} Vendor logs
+          <div className="text-xs text-emerald-600 font-medium mt-0.5">
+            {kpis.college_activities_count || 0} College · {kpis.vendor_activities_count || 0} Vendor logs
           </div>
         </div>
       </div>
 
       {/* KPI Section - Row 2: Candidate Recruitment Funnel */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {/* Contacted */}
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-purple-600">Contacted</p>
-          <div className="text-xl font-black text-purple-700 mt-1">{kpis.contacted}</div>
-          <div className="text-[10px] text-purple-500 mt-0.5">
-            {kpis.total_assigned > 0 ? `${Math.round((kpis.contacted / kpis.total_assigned) * 100)}% reached` : '0%'}
+      <div className="bg-white p-5 rounded-3xl border border-slate-200/90 shadow-xs space-y-3">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-600" />
+            <span className="text-xs font-extrabold text-slate-800 uppercase tracking-wider">Candidate Pipeline Funnel</span>
           </div>
+          <span className="text-xs font-semibold text-slate-400">{kpis.total_assigned} Total Candidates</span>
         </div>
 
-        {/* Shortlisted */}
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600">Shortlisted</p>
-          <div className="text-xl font-black text-amber-700 mt-1">{kpis.shortlisted}</div>
-          <div className="text-[10px] text-amber-500 mt-0.5">Profile screened</div>
-        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          {/* Contacted */}
+          <div className="p-3.5 rounded-2xl bg-purple-50/50 border border-purple-100">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-purple-600">Contacted</p>
+            <div className="text-xl font-black text-purple-900 mt-1">{kpis.contacted}</div>
+            <div className="text-[10px] font-bold text-purple-600 mt-0.5">
+              {kpis.total_assigned > 0 ? `${Math.round((kpis.contacted / kpis.total_assigned) * 100)}% reached` : '0%'}
+            </div>
+          </div>
 
-        {/* Interview Scheduled */}
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600">Interviewed</p>
-          <div className="text-xl font-black text-indigo-700 mt-1">{kpis.interview_scheduled}</div>
-          <div className="text-[10px] text-indigo-500 mt-0.5">Rounds scheduled</div>
-        </div>
+          {/* Shortlisted */}
+          <div className="p-3.5 rounded-2xl bg-amber-50/50 border border-amber-100">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600">Shortlisted</p>
+            <div className="text-xl font-black text-amber-900 mt-1">{kpis.shortlisted}</div>
+            <div className="text-[10px] text-amber-600 font-semibold mt-0.5">Profile screened</div>
+          </div>
 
-        {/* Selected */}
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600">Selected</p>
-          <div className="text-xl font-black text-emerald-700 mt-1">{kpis.selected}</div>
-          <div className="text-[10px] text-emerald-500 mt-0.5">Offer stage</div>
-        </div>
+          {/* Interview Scheduled */}
+          <div className="p-3.5 rounded-2xl bg-blue-50/50 border border-blue-100">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-blue-600">Interviewed</p>
+            <div className="text-xl font-black text-blue-900 mt-1">{kpis.interview_scheduled}</div>
+            <div className="text-[10px] text-blue-600 font-semibold mt-0.5">Rounds scheduled</div>
+          </div>
 
-        {/* Rejected */}
-        <div className="bg-white p-3.5 rounded-2xl border border-slate-200 shadow-xs">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600">Rejected</p>
-          <div className="text-xl font-black text-rose-700 mt-1">{kpis.rejected}</div>
-          <div className="text-[10px] text-rose-400 mt-0.5">Declined / unmatched</div>
-        </div>
+          {/* Selected */}
+          <div className="p-3.5 rounded-2xl bg-emerald-50/50 border border-emerald-100">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600">Selected</p>
+            <div className="text-xl font-black text-emerald-900 mt-1">{kpis.selected}</div>
+            <div className="text-[10px] text-emerald-600 font-semibold mt-0.5">Offer stage</div>
+          </div>
 
-        {/* Joined */}
-        <div className="bg-white p-3.5 rounded-2xl border border-teal-200 shadow-xs bg-gradient-to-b from-teal-50/50 to-white">
-          <p className="text-[10px] font-extrabold uppercase tracking-wider text-teal-600">Joined / Hired</p>
-          <div className="text-xl font-black text-teal-700 mt-1">{kpis.joined}</div>
-          <div className="text-[10px] font-bold text-teal-600 mt-0.5">{kpis.conversion_rate}% placement</div>
+          {/* Rejected */}
+          <div className="p-3.5 rounded-2xl bg-rose-50/50 border border-rose-100">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-rose-600">Rejected</p>
+            <div className="text-xl font-black text-rose-900 mt-1">{kpis.rejected}</div>
+            <div className="text-[10px] text-rose-500 font-semibold mt-0.5">Declined / unmatched</div>
+          </div>
+
+          {/* Joined */}
+          <div className="p-3.5 rounded-2xl bg-teal-50 border border-teal-200">
+            <p className="text-[10px] font-extrabold uppercase tracking-wider text-teal-700">Joined / Hired</p>
+            <div className="text-xl font-black text-teal-900 mt-1">{kpis.joined}</div>
+            <div className="text-[10px] font-extrabold text-teal-700 mt-0.5">{kpis.conversion_rate}% placement</div>
+          </div>
         </div>
       </div>
 
