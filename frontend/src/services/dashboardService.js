@@ -150,6 +150,7 @@ export const dashboardService = {
 
       const summary = {
         total_recruiters,
+        yet_to_connect: statusCounts.YET_TO_CONNECT,
         yet_to_connected: statusCounts.YET_TO_CONNECT,
         connected: statusCounts.CONNECTED,
         interested: statusCounts.INTERESTED,
@@ -203,6 +204,7 @@ export const dashboardService = {
 
       const summary = {
         total_recruiters,
+        yet_to_connect: statusCounts.YET_TO_CONNECT,
         yet_to_connected: statusCounts.YET_TO_CONNECT,
         connected: statusCounts.CONNECTED,
         interested: statusCounts.INTERESTED,

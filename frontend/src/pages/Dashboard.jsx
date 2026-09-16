@@ -329,14 +329,14 @@ export const Dashboard = () => {
 
   // Pipeline funnel steps calculations (5 Core Statuses)
   const totalLeads = summary?.total_recruiters || 1;
-  const stage1 = summary?.yet_to_connected || 0;
+  const stage1 = summary?.yet_to_connect ?? summary?.yet_to_connected ?? 0;
   const stage2 = summary?.connected || 0;
   const stage3 = summary?.interested || 0;
   const stage4 = summary?.no_response || 0;
   const stage5 = summary?.mou_signed || 0;
 
   const funnelSteps = [
-    { label: 'Yet to Connected', count: stage1, percent: Math.round((stage1 / totalLeads) * 100), color: 'bg-blue-500', lightColor: 'bg-blue-50 text-blue-700 border-blue-200' },
+    { label: 'Yet to Connect', count: stage1, percent: Math.round((stage1 / totalLeads) * 100), color: 'bg-blue-500', lightColor: 'bg-blue-50 text-blue-700 border-blue-200' },
     { label: 'Connected', count: stage2, percent: Math.round((stage2 / totalLeads) * 100), color: 'bg-purple-500', lightColor: 'bg-purple-50 text-purple-700 border-purple-200' },
     { label: 'Interested', count: stage3, percent: Math.round((stage3 / totalLeads) * 100), color: 'bg-amber-500', lightColor: 'bg-amber-50 text-amber-700 border-amber-200' },
     { label: 'No Response', count: stage4, percent: Math.round((stage4 / totalLeads) * 100), color: 'bg-rose-500', lightColor: 'bg-rose-50 text-rose-700 border-rose-200' },

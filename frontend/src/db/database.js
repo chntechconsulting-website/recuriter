@@ -31,7 +31,7 @@ export function formatSqlValue(val, key = '') {
   return `'${str.replace(/'/g, "''")}'`;
 }
 
-const DB_NAME = 'RecruiterCandidateDB_v7';
+const DB_NAME = 'RecruiterCandidateDB_v11';
 const DB_VERSION = 3;
 
 const STORES = [

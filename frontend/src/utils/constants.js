@@ -46,7 +46,7 @@ export const INDUSTRIES = CATEGORIES;
 export const VENDOR_CATEGORIES = CATEGORIES;
 
 export const LEAD_STATUSES = [
-  { value: 'YET_TO_CONNECT', label: 'Yet to Connected', color: 'bg-blue-100 text-blue-800 border-blue-200' },
+  { value: 'YET_TO_CONNECT', label: 'Yet to Connect', color: 'bg-blue-100 text-blue-800 border-blue-200' },
   { value: 'CONNECTED', label: 'Connected', color: 'bg-purple-100 text-purple-800 border-purple-200' },
   { value: 'INTERESTED', label: 'Interested', color: 'bg-amber-100 text-amber-800 border-amber-200' },
   { value: 'NO_RESPONSE', label: 'No Response', color: 'bg-rose-100 text-rose-800 border-rose-200' },

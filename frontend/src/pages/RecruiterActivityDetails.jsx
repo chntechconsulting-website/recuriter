@@ -5,7 +5,7 @@ import { useToast } from '../context/ToastContext';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { Pagination } from '../components/common/Pagination';
 import { Modal } from '../components/common/Modal';
-import { formatDateTime } from '../utils/formatters';
+import { formatDateTime, formatExactTime, formatExactDate } from '../utils/formatters';
 import { RECRUITER_ACTION_TYPES, CANDIDATE_STATUSES } from '../utils/constants';
 import {
   ArrowLeft,
@@ -827,9 +827,8 @@ export const RecruiterActivityDetails = () => {
               {activities.map((act) => {
                 const badge = getActionBadge(act.action_type);
                 const IconComponent = badge.icon;
-                const actDate = new Date(act.created_at);
-                const exactTime = actDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                const exactDate = actDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+                const exactTime = formatExactTime(act.created_at);
+                const exactDate = formatExactDate(act.created_at);
 
                 return (
                   <div key={act.id} className="relative pl-6 group">

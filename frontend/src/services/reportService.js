@@ -69,6 +69,7 @@ export const reportService = {
       mou_signed,
       connected,
       interested,
+      yet_to_connect: yet_to_connected,
       yet_to_connected,
       conversion_rate,
       staff_performance: staffPerformance
