@@ -31,8 +31,8 @@ export function formatSqlValue(val, key = '') {
   return `'${str.replace(/'/g, "''")}'`;
 }
 
-const DB_NAME = 'RecruiterCandidateDB_v13';
-const DB_VERSION = 3;
+const DB_NAME = 'RecruiterCandidateDB_v14';
+const DB_VERSION = 1;
 
 const STORES = [
   'users',
@@ -53,6 +53,14 @@ let dbPromise = null;
 // High-speed In-Memory Cache and In-Flight Request Deduplicator
 const memCache = new Map();
 const inFlightPromises = new Map();
+
+export const clearMemoryCache = (storeName) => {
+  if (storeName) {
+    memCache.delete(storeName);
+  } else {
+    memCache.clear();
+  }
+};
 
 // Initialize local IndexedDB as persistent cache
 export const openDatabase = () => {

@@ -1,4 +1,4 @@
-import { dbOps, sql, formatSqlValue } from '../db/database';
+import { dbOps, sql, formatSqlValue, clearMemoryCache } from '../db/database';
 import { authService } from './authService';
 
 export const recruiterActivityService = {
@@ -37,14 +37,20 @@ export const recruiterActivityService = {
    * Get all recruiters with calculated KPI metrics and latest activity
    */
   getAllRecruitersWithKpis: async (params = {}) => {
+    const forceFresh = params.forceFresh ?? true;
+    if (forceFresh) {
+      clearMemoryCache('recruiters');
+      clearMemoryCache('users');
+    }
+
     // 1. Fetch users, candidates, activities, leads, and assignment tables
     const [users, candidates, activities, leads, collegeAssignments, vendorAssignments] = await Promise.all([
-      dbOps.getAll('users'),
-      dbOps.getAll('candidates'),
-      dbOps.getAll('recruiter_activities'),
-      dbOps.getAll('recruiters'),
-      dbOps.getAll('recruiter_college_assignments'),
-      dbOps.getAll('recruiter_vendor_assignments')
+      dbOps.getAll('users', { forceFresh }),
+      dbOps.getAll('candidates', { forceFresh }),
+      dbOps.getAll('recruiter_activities', { forceFresh }),
+      dbOps.getAll('recruiters', { forceFresh }),
+      dbOps.getAll('recruiter_college_assignments', { forceFresh }),
+      dbOps.getAll('recruiter_vendor_assignments', { forceFresh })
     ]);
 
     // Filter to recruiters/staff (or all non-system users)
@@ -157,15 +163,19 @@ export const recruiterActivityService = {
   /**
    * Get single recruiter profile, KPIs, assigned candidates, colleges, and vendors
    */
-  getRecruiterDetails: async (recruiterId) => {
+  getRecruiterDetails: async (recruiterId, options = {}) => {
+    const forceFresh = options.forceFresh ?? true;
+    if (forceFresh) {
+      clearMemoryCache('recruiters');
+    }
     const numId = Number(recruiterId);
     const [user, candidates, activities, leads, collegeAssignments, vendorAssignments] = await Promise.all([
       dbOps.getById('users', numId),
-      dbOps.getAll('candidates'),
-      dbOps.getAll('recruiter_activities'),
-      dbOps.getAll('recruiters'),
-      dbOps.getAll('recruiter_college_assignments'),
-      dbOps.getAll('recruiter_vendor_assignments')
+      dbOps.getAll('candidates', { forceFresh }),
+      dbOps.getAll('recruiter_activities', { forceFresh }),
+      dbOps.getAll('recruiters', { forceFresh }),
+      dbOps.getAll('recruiter_college_assignments', { forceFresh }),
+      dbOps.getAll('recruiter_vendor_assignments', { forceFresh })
     ]);
 
     if (!user) {
